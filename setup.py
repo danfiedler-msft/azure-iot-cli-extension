@@ -46,7 +46,7 @@ if not PACKAGE_NAME:
 DEPENDENCIES = [
     "azure-core>=1.24.0,<2.0.0",
     "azure-mgmt-core>=1.3.0,<2.0.0",
-    "azure-identity>=1.6.1,<2.0.0",
+    "azure-identity>=1.6.1,<1.18.0",
     "azure-storage-blob>=12.14.0,<13.0.0",
     "msrest>=0.6.21",
     "msrestazure>=0.6.3,<2.0.0",
@@ -67,7 +67,6 @@ CLASSIFIERS = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -80,7 +79,7 @@ short_description = "The Azure IoT extension for Azure CLI."
 setup(
     name=PACKAGE_NAME,
     version=VERSION,
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     description=short_description,
     long_description="{} Intended for power users and/or automation of IoT solutions at scale.".format(
         short_description
