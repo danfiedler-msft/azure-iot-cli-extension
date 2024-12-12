@@ -7,7 +7,7 @@
 import os
 import pytest
 import json
-import time
+from time import time, sleep
 
 from uuid import uuid4
 from azext_iot.iothub.common import NON_DECODABLE_PAYLOAD
@@ -774,7 +774,7 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
         model_id_simulate_x509ca = "dtmi:com:example:simulatex509ca;1"
 
         # not sure why this needs a timer but it seems to help avoid unauthorized errors
-        time.sleep(60)
+        sleep(60)
         self.cmd(
             "iot device simulate -d {} -n {} -g {} --da '{}' --mc 1 --mi 1 --cp {} --kp {} --pass {} --model-id '{}'".format(
                 device_ids[1], self.entity_name, self.entity_rg, simulate_msg,
