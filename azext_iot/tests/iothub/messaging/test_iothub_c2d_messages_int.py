@@ -62,13 +62,12 @@ class TestIoTHubC2DMessages(IoTLiveScenarioTest):
             ).get_output_in_json()
 
             # TODO - @c-ryan-k - when using login auth type, the payload is not decoded correctly
-            assert c2d_receive_result["data"] == (NON_DECODABLE_PAYLOAD if auth_phase == AuthenticationTypeDataplane.login.value else test_body)
+            assert c2d_receive_result["data"] == test_body
 
             # Assert system properties
             received_system_props = c2d_receive_result["properties"]["system"]
-            # TODO - @c-ryan-k - no system props returned
-            # assert received_system_props["ContentEncoding"] == test_ce
-            # assert received_system_props["ContentType"] == test_ct
+            assert received_system_props["content-encoding"] == test_ce
+            assert received_system_props["content-type"] == test_ct
             assert received_system_props["iothub-correlationid"] == test_cid
             assert received_system_props["iothub-messageid"] == test_mid
             assert received_system_props["iothub-expiry"]

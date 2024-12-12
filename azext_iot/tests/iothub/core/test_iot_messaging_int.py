@@ -102,9 +102,8 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
         assert result["data"] == test_body
 
         system_props = result["properties"]["system"]
-        # TODO - @c-ryan-k - no system properties
-        # assert system_props["ContentEncoding"] == test_ce
-        # assert system_props["ContentType"] == test_ct
+        assert system_props["content-encoding"] == test_ce
+        assert system_props["content-type"] == test_ct
         assert system_props["iothub-correlationid"] == test_cid
         assert system_props["iothub-messageid"] == test_mid
         assert system_props["iothub-expiry"]
@@ -159,8 +158,8 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
             self._remove_newlines_spaces(payload=self.kwargs["messaging_data"])
 
         system_props = result["properties"]["system"]
-        # assert system_props["ContentEncoding"] == test_ce
-        # assert system_props["ContentType"] == 'application/json'
+        assert system_props["content-encoding"] == test_ce
+        assert system_props["content-type"] == 'application/json'
         assert system_props["iothub-correlationid"] == test_cid
         assert system_props["iothub-messageid"] == test_mid
         assert system_props["iothub-expiry"]
@@ -211,8 +210,8 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
         assert result["data"] == self.kwargs["messaging_unicodable_data"]
 
         system_props = result["properties"]["system"]
-        # assert system_props["ContentEncoding"] == test_ce
-        # assert system_props["ContentType"] == 'application/octet-stream'
+        assert system_props["content-encoding"] == test_ce
+        assert system_props["content-type"] == 'application/octet-stream'
         assert system_props["iothub-correlationid"] == test_cid
         assert system_props["iothub-messageid"] == test_mid
         assert system_props["iothub-expiry"]
@@ -263,8 +262,8 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
         assert result["data"] == self.kwargs["messaging_non_unicodable_data"]
 
         system_props = result["properties"]["system"]
-        # assert system_props["ContentEncoding"] == test_ce
-        # assert system_props["ContentType"] == 'application/octet-stream'
+        assert system_props["content-encoding"] == test_ce
+        assert system_props["content-type"] == 'application/octet-stream'
         assert system_props["iothub-correlationid"] == test_cid
         assert system_props["iothub-messageid"] == test_mid
         assert system_props["iothub-expiry"]
@@ -316,8 +315,8 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
         # assert result["data"] == self.kwargs["messaging_non_unicodable_data"]
 
         system_props = result["properties"]["system"]
-        # assert system_props["ContentEncoding"] == 'gzip'
-        # assert system_props["ContentType"] == 'application/octet-stream'
+        assert system_props["content-encoding"] == 'gzip'
+        assert system_props["content-type"] == 'application/octet-stream'
         assert system_props["iothub-correlationid"] == test_cid
         assert system_props["iothub-messageid"] == test_mid
         assert system_props["iothub-expiry"]
@@ -392,8 +391,8 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
         assert result["data"] == self.kwargs["c2d_json_send_data"]
 
         system_props = result["properties"]["system"]
-        # assert system_props["ContentEncoding"] == test_ce
-        # assert system_props["ContentType"] == test_ct
+        assert system_props["content-encoding"] == test_ce
+        assert system_props["content-type"] == test_ct
         assert system_props["iothub-correlationid"] == test_cid
         assert system_props["iothub-messageid"] == test_mid
         assert system_props["iothub-expiry"]

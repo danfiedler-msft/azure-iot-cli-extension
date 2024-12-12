@@ -23,8 +23,8 @@ MESSAGING_HTTP_C2D_SYSTEM_PROPERTIES = [
     "iothub-expiry",
     "iothub-deliverycount",
     "iothub-enqueuedtime",
-    "ContentType",
-    "ContentEncoding",
+    "content-type",
+    "content-encoding",
 ]
 METHOD_INVOKE_MAX_TIMEOUT_SEC = 300
 METHOD_INVOKE_MIN_TIMEOUT_SEC = 10
