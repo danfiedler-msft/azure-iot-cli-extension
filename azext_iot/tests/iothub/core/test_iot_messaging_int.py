@@ -5,14 +5,13 @@
 # --------------------------------------------------------------------------------------------
 
 import os
-from azure.cli.core.azclierror import AzureResponseError
-from azext_iot.iothub.common import NON_DECODABLE_PAYLOAD
-from azext_iot.tests.conftest import get_context_path
 import pytest
 import json
+import time
 
-from time import time
 from uuid import uuid4
+from azext_iot.iothub.common import NON_DECODABLE_PAYLOAD
+from azext_iot.tests.conftest import get_context_path
 from azext_iot.tests.helpers import CERT_ENDING, KEY_ENDING
 from azext_iot.tests.iothub import IoTLiveScenarioTest, PREFIX_DEVICE
 from azext_iot.common.utility import (
@@ -333,15 +332,12 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
         # Implicit etag assertion
         etag = result["etag"]
 
-        try:
-            self.cmd(
-                "iot device c2d-message complete -d {} --hub-name {} -g {} --etag {}".format(
-                    device_ids[0], self.entity_name, self.entity_rg, etag
-                ),
-                checks=self.is_empty(),
-            )
-        except AzureResponseError as e:
-            logger.warning("Error completing message: %s", e)
+        self.cmd(
+            "iot device c2d-message complete -d {} --hub-name {} -g {} --etag {}".format(
+                device_ids[0], self.entity_name, self.entity_rg, etag
+            ),
+            checks=self.is_empty(),
+        )
 
         # Error - Send C2D message with non existed file path
         self.cmd(
@@ -776,8 +772,9 @@ class TestIoTHubMessaging(IoTLiveScenarioTest):
 
         # x509 CA device simulation and include model Id upon connection
         model_id_simulate_x509ca = "dtmi:com:example:simulatex509ca;1"
+
         # not sure why this needs a timer but it seems to help avoid unauthorized errors
-        import time; time.sleep(60)
+        time.sleep(60)
         self.cmd(
             "iot device simulate -d {} -n {} -g {} --da '{}' --mc 1 --mi 1 --cp {} --kp {} --pass {} --model-id '{}'".format(
                 device_ids[1], self.entity_name, self.entity_rg, simulate_msg,
