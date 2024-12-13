@@ -47,6 +47,6 @@ IOTHUB_THROTTLE_MAX_TRIES = 3
 IOTHUB_THROTTLE_SLEEP_SEC = 20
 THROTTLE_HTTP_STATUS_CODE = 429
 IOTHUB_RENEW_KEY_BATCH_SIZE = 100
-# (Lib name, minimum version (including), maximum version (excluding))
-EVENT_LIB = ("uamqp", "1.2", "1.3")
+UAMQP_DEP_NAME = "uamqp"
+UAMQP_COMPAT_VERSION = "1.6.6"
 PNP_DTDLV2_COMPONENT_MARKER = "__t"
