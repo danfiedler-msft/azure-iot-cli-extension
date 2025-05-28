@@ -14,7 +14,7 @@ parameters:
     displayName: "Test Python 3.11"
     type: boolean
     default: true
-  - name: python311
+  - name: python312
     displayName: "Test Python 3.12"
     type: boolean
     default: true
