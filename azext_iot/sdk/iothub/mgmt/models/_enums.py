@@ -62,6 +62,13 @@ class DefaultAction(str, Enum, metaclass=CaseInsensitiveEnumMeta):
     ALLOW = "Allow"
 
 
+class GatewayVersion(str, Enum, metaclass=CaseInsensitiveEnumMeta):
+    """The IoT hub Gateway version."""
+
+    V1 = "V1"
+    V2 = "V2"
+
+
 class EndpointHealthStatus(str, Enum, metaclass=CaseInsensitiveEnumMeta):
     """Health statuses have following meanings. The 'healthy' status shows that the endpoint is
     accepting messages as expected. The 'unhealthy' status shows that the endpoint is not accepting

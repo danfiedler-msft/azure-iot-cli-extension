@@ -34,6 +34,7 @@ from azext_iot.common.shared import (
     SdkType,
     ConfigType,
     KeyType,
+    HostnameType,
     RenewKeyType,
     IoTHubStateType,
     DeviceAuthApiType,
@@ -2394,7 +2395,28 @@ def _iot_build_sas_token(
     return SasTokenAuthentication(uri, policy, key, duration)
 
 
-def _build_device_or_module_connection_string(entity, key_type="primary"):
+def _resolve_hostname_by_type(hub, hostname_type):
+    """Resolve the appropriate hostname based on the hostname type."""
+    if hostname_type == HostnameType.device.value:
+        hostname = getattr(hub.properties, "device_host_name", None)
+        if not hostname:
+            raise InvalidArgumentValueError(
+                "The device hostname is not available for this IoT Hub. "
+                "This feature is only supported on GWv2 IoT Hubs."
+            )
+        return hostname
+    elif hostname_type == HostnameType.service.value:
+        hostname = getattr(hub.properties, "service_host_name", None)
+        if not hostname:
+            raise InvalidArgumentValueError(
+                "The service hostname is not available for this IoT Hub. "
+                "This feature is only supported on GWv2 IoT Hubs."
+            )
+        return hostname
+    return hub.properties.host_name
+
+
+def _build_device_or_module_connection_string(entity, key_type="primary", hostname_override=None):
     is_device = entity.get("moduleId") is None
     template = (
         "HostName={};DeviceId={};{}"
@@ -2417,11 +2439,12 @@ def _build_device_or_module_connection_string(entity, key_type="primary"):
     else:
         raise CLIInternalError("Unable to form target connection string")
 
+    hostname = hostname_override or entity.get("hub")
     if is_device:
-        return template.format(entity.get("hub"), entity.get("deviceId"), key)
+        return template.format(hostname, entity.get("deviceId"), key)
     else:
         return template.format(
-            entity.get("hub"), entity.get("deviceId"), entity.get("moduleId"), key
+            hostname, entity.get("deviceId"), entity.get("moduleId"), key
         )
 
 
@@ -2433,6 +2456,7 @@ def iot_get_device_connection_string(
     resource_group_name=None,
     login=None,
     auth_type_dataplane=None,
+    hostname_type=HostnameType.classic.value,
 ):
     result = {}
     device = iot_device_show(
@@ -2443,8 +2467,13 @@ def iot_get_device_connection_string(
         login=login,
         auth_type_dataplane=auth_type_dataplane,
     )
+    hostname_override = None
+    if hostname_type != HostnameType.classic.value:
+        discovery = IotHubDiscovery(cmd)
+        hub = discovery.find_resource(hub_name_or_hostname, resource_group_name)
+        hostname_override = _resolve_hostname_by_type(hub, hostname_type)
     result["connectionString"] = _build_device_or_module_connection_string(
-        device, key_type
+        device, key_type, hostname_override=hostname_override
     )
     return result
 
@@ -2458,6 +2487,7 @@ def iot_get_module_connection_string(
     resource_group_name=None,
     login=None,
     auth_type_dataplane=None,
+    hostname_type=HostnameType.classic.value,
 ):
     result = {}
     module = iot_device_module_show(
@@ -2469,8 +2499,13 @@ def iot_get_module_connection_string(
         login=login,
         auth_type_dataplane=auth_type_dataplane,
     )
+    hostname_override = None
+    if hostname_type != HostnameType.classic.value:
+        discovery = IotHubDiscovery(cmd)
+        hub = discovery.find_resource(hub_name_or_hostname, resource_group_name)
+        hostname_override = _resolve_hostname_by_type(hub, hostname_type)
     result["connectionString"] = _build_device_or_module_connection_string(
-        module, key_type
+        module, key_type, hostname_override=hostname_override
     )
     return result
 
@@ -2863,6 +2898,7 @@ def iot_hub_connection_string_show(
     key_type=KeyType.primary.value,
     show_all=False,
     default_eventhub=False,
+    hostname_type=HostnameType.classic.value,
 ):
     discovery = IotHubDiscovery(cmd)
 
@@ -2873,7 +2909,7 @@ def iot_hub_connection_string_show(
 
         def conn_str_getter(hub):
             return _get_hub_connection_string(
-                discovery, hub, policy_name, key_type, show_all, default_eventhub
+                discovery, hub, policy_name, key_type, show_all, default_eventhub, hostname_type
             )
 
         connection_strings = []
@@ -2905,13 +2941,13 @@ def iot_hub_connection_string_show(
     hub = discovery.find_resource(hub_name_or_hostname, resource_group_name)
     if hub:
         conn_str = _get_hub_connection_string(
-            discovery, hub, policy_name, key_type, show_all, default_eventhub
+            discovery, hub, policy_name, key_type, show_all, default_eventhub, hostname_type
         )
         return {"connectionString": conn_str if show_all else conn_str[0]}
 
 
 def _get_hub_connection_string(
-    discovery, hub, policy_name, key_type, show_all, default_eventhub
+    discovery, hub, policy_name, key_type, show_all, default_eventhub, hostname_type=HostnameType.classic.value
 ):
 
     policies = []
@@ -2949,7 +2985,7 @@ def _get_hub_connection_string(
             )
         ]
 
-    hostname = hub.properties.host_name
+    hostname = _resolve_hostname_by_type(hub, hostname_type)
     cs_template = "HostName={};SharedAccessKeyName={};SharedAccessKey={}"
     return [
         cs_template.format(

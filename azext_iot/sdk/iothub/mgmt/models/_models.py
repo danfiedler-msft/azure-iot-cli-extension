@@ -1504,6 +1504,28 @@ class IotHubDescriptionListResult(_serialization.Model):
         self.next_link = None
 
 
+class IotHubDetails(_serialization.Model):
+    """Set of additional read-only properties for the IoT hub.
+
+    Variables are only populated by the server, and will be ignored when sending a request.
+
+    :ivar gateway_version: The IoT hub Gateway version. Known values are: "V1" and "V2".
+    :vartype gateway_version: str or ~iothub.mgmt.models.GatewayVersion
+    """
+
+    _validation = {
+        "gateway_version": {"readonly": True},
+    }
+
+    _attribute_map = {
+        "gateway_version": {"key": "gatewayVersion", "type": "str"},
+    }
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.gateway_version: Optional[Union[str, "_models.GatewayVersion"]] = None
+
+
 class IotHubLocationDescription(_serialization.Model):
     """Public representation of one of the locations where a resource is provisioned.
 
@@ -1619,6 +1641,11 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
     :vartype state: str
     :ivar host_name: The name of the host.
     :vartype host_name: str
+    :ivar device_host_name: The name of the device host. Supports secure connections over TLS 1.3.
+    :vartype device_host_name: str
+    :ivar service_host_name: The name of the service host. Supports secure connections over TLS
+     1.3.
+    :vartype service_host_name: str
     :ivar event_hub_endpoints: The Event Hub-compatible endpoint properties. The only possible keys
      to this dictionary is events. This key has to be present in the dictionary while making create
      or update calls for the IoT hub.
@@ -1660,13 +1687,18 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
     :vartype ip_version: str or ~iothub.mgmt.models.IpVersion
     :ivar device_registry: Represents properties related to the Azure Device Registry (ADR).
     :vartype device_registry: ~iothub.mgmt.models.DeviceRegistry
+    :ivar iot_hub_details: Set of additional read-only properties for the IoT hub.
+    :vartype iot_hub_details: ~iothub.mgmt.models.IotHubDetails
     """
 
     _validation = {
         "provisioning_state": {"readonly": True},
         "state": {"readonly": True},
         "host_name": {"readonly": True},
+        "device_host_name": {"readonly": True},
+        "service_host_name": {"readonly": True},
         "locations": {"readonly": True},
+        "iot_hub_details": {"readonly": True},
     }
 
     _attribute_map = {
@@ -1684,6 +1716,8 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
         "provisioning_state": {"key": "provisioningState", "type": "str"},
         "state": {"key": "state", "type": "str"},
         "host_name": {"key": "hostName", "type": "str"},
+        "device_host_name": {"key": "deviceHostName", "type": "str"},
+        "service_host_name": {"key": "serviceHostName", "type": "str"},
         "event_hub_endpoints": {"key": "eventHubEndpoints", "type": "{EventHubProperties}"},
         "routing": {"key": "routing", "type": "RoutingProperties"},
         "storage_endpoints": {"key": "storageEndpoints", "type": "{StorageEndpointProperties}"},
@@ -1699,6 +1733,7 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
         "root_certificate": {"key": "rootCertificate", "type": "RootCertificateProperties"},
         "ip_version": {"key": "ipVersion", "type": "str"},
         "device_registry": {"key": "deviceRegistry", "type": "DeviceRegistry"},
+        "iot_hub_details": {"key": "iotHubDetails", "type": "IotHubDetails"},
     }
 
     def __init__(  # pylint: disable=too-many-locals
@@ -1818,6 +1853,8 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
         self.provisioning_state = None
         self.state = None
         self.host_name = None
+        self.device_host_name = None
+        self.service_host_name = None
         self.event_hub_endpoints = event_hub_endpoints
         self.routing = routing
         self.storage_endpoints = storage_endpoints
@@ -1833,6 +1870,7 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
         self.root_certificate = root_certificate
         self.ip_version = ip_version
         self.device_registry = device_registry
+        self.iot_hub_details = None
 
 
 class IotHubPropertiesDeviceStreams(_serialization.Model):

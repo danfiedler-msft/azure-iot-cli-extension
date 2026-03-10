@@ -36,7 +36,10 @@ Release History
 
 **IoT Hub updates**
 
-* New management SDK using `2025-08-01-preview` API version.
+* New management SDK using `2026-03-01-preview` API version.
+* New ``device_host_name`` and ``service_host_name`` read-only properties on IoT Hub for TLS 1.3 support.
+* New ``iot_hub_details`` property with ``gateway_version`` to identify GWv2 hubs.
+* New ``--hostname-type`` flag on connection-string commands to select classic, device, or service hostname for TLS 1.3 support.
 * New Hub `Gen2` SKU to support ADR integration.
 * `Gen2` hub creation now supports linking an ADR namespace using `--ns-resource-id` and `--ns-identity-id` arguments.
 

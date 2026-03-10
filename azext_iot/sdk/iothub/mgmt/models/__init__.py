@@ -34,6 +34,8 @@ from ._models import GroupIdInformationProperties
 from ._models import ImportDevicesRequest
 from ._models import IotHubCapacity
 from ._models import IotHubDescription
+from ._models import IotHubDescriptionListResult
+from ._models import IotHubDetails
 from ._models import IotHubLocationDescription
 from ._models import IotHubNameAvailabilityInfo
 from ._models import IotHubProperties
@@ -93,6 +95,7 @@ from ._enums import Capabilities
 from ._enums import CreatedByType
 from ._enums import DefaultAction
 from ._enums import EndpointHealthStatus
+from ._enums import GatewayVersion
 from ._enums import IotHubNameUnavailabilityReason
 from ._enums import IotHubReplicaRoleType
 from ._enums import IotHubScaleType
@@ -143,6 +146,8 @@ __all__ = [
     "ImportDevicesRequest",
     "IotHubCapacity",
     "IotHubDescription",
+    "IotHubDescriptionListResult",
+    "IotHubDetails",
     "IotHubLocationDescription",
     "IotHubNameAvailabilityInfo",
     "IotHubProperties",
@@ -201,6 +206,7 @@ __all__ = [
     "CreatedByType",
     "DefaultAction",
     "EndpointHealthStatus",
+    "GatewayVersion",
     "IotHubNameUnavailabilityReason",
     "IotHubReplicaRoleType",
     "IotHubScaleType",
