@@ -63,6 +63,6 @@ class TestIotHubTls13Models:
         assert gv.value == version
 
     def test_gateway_version_enum_case_insensitive(self):
-        """GatewayVersion enum should be case insensitive."""
-        assert GatewayVersion("v1") == GatewayVersion.V1
-        assert GatewayVersion("v2") == GatewayVersion.V2
+        """GatewayVersion enum should support case-insensitive attribute access."""
+        assert GatewayVersion["v1"] == GatewayVersion.V1
+        assert GatewayVersion["v2"] == GatewayVersion.V2
