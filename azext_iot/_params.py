@@ -20,8 +20,7 @@ from azext_iot.common.shared import (
     SettleType,
     DeviceAuthType,
     KeyType,
-    ServiceHostnameType,
-    DeviceHostnameType,
+    HostnameType,
     AttestationType,
     ProtocolType,
     AckType,
@@ -354,8 +353,8 @@ def load_arguments(self, _):
         context.argument(
             "hostname_type",
             options_list=["--hostname-type", "--ht"],
-            arg_type=get_enum_type(ServiceHostnameType),
-            default=ServiceHostnameType.service.value,
+            arg_type=get_enum_type(["classic", "service"]),
+            default=HostnameType.service.value,
             help="Type of hostname to use in the connection string. "
             "'classic' uses the default hostname, "
             "'service' uses the TLS 1.3 service hostname. "
@@ -370,8 +369,8 @@ def load_arguments(self, _):
             context.argument(
                 "hostname_type",
                 options_list=["--hostname-type", "--ht"],
-                arg_type=get_enum_type(DeviceHostnameType),
-                default=DeviceHostnameType.device.value,
+                arg_type=get_enum_type(["classic", "device"]),
+                default=HostnameType.device.value,
                 help="Type of hostname to use in the connection string. "
                 "'classic' uses the default hostname, "
                 "'device' uses the TLS 1.3 device hostname. "
