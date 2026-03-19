@@ -2418,9 +2418,11 @@ def _fetch_tls_hostnames(cmd, hub_name, resource_group_name, hub_location=None):
     resp = client.iot_hub_resource._client.send_request(req)
     data = resp.json()
     props = data.get("properties", {})
+    gateway_version = props.get("iotHubDetails", {}).get("gatewayVersion")
     return {
         "deviceHostName": props.get("deviceHostName"),
         "serviceHostName": props.get("serviceHostName"),
+        "gatewayVersion": gateway_version,
     }
 
 
@@ -2433,24 +2435,16 @@ def _resolve_hostname_by_type(cmd, hub, hostname_type):
         cmd, hub.name, hub.additional_properties.get("resourcegroup"), hub.location
     )
 
-    if hostname_type == HostnameType.device.value:
-        hostname = tls_info.get("deviceHostName")
-        if not hostname:
-            raise InvalidArgumentValueError(
-                "The device hostname is not available for this IoT Hub. "
-                "This feature is only supported on GWv2 IoT Hubs."
-            )
-        return hostname
-    elif hostname_type == HostnameType.service.value:
-        hostname = tls_info.get("serviceHostName")
-        if not hostname:
-            raise InvalidArgumentValueError(
-                "The service hostname is not available for this IoT Hub. "
-                "This feature is only supported on GWv2 IoT Hubs."
-            )
-        return hostname
+    if tls_info.get("gatewayVersion") != "V2":
+        logger.warning(
+            "IoT Hub '%s' is not a GWv2 hub. Falling back to classic hostname. "
+            "The 'device' and 'service' hostname types are only available on GWv2 IoT Hubs.",
+            hub.name,
+        )
+        return hub.properties.host_name
 
-    return hub.properties.host_name
+    hostname_key = "deviceHostName" if hostname_type == HostnameType.device.value else "serviceHostName"
+    return tls_info.get(hostname_key) or hub.properties.host_name
 
 
 def _build_device_or_module_connection_string(entity, key_type="primary", hostname_override=None):

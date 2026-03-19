@@ -20,7 +20,8 @@ from azext_iot.common.shared import (
     SettleType,
     DeviceAuthType,
     KeyType,
-    HostnameType,
+    ServiceHostnameType,
+    DeviceHostnameType,
     AttestationType,
     ProtocolType,
     AckType,
@@ -353,13 +354,12 @@ def load_arguments(self, _):
         context.argument(
             "hostname_type",
             options_list=["--hostname-type", "--ht"],
-            arg_type=get_enum_type(HostnameType),
-            default=HostnameType.service.value,
+            arg_type=get_enum_type(ServiceHostnameType),
+            default=ServiceHostnameType.service.value,
             help="Type of hostname to use in the connection string. "
             "'classic' uses the default hostname, "
-            "'device' uses the TLS 1.3 device hostname, "
             "'service' uses the TLS 1.3 service hostname. "
-            "The 'device' and 'service' options are only available on GWv2 IoT Hubs.",
+            "Only available on GWv2 IoT Hubs.",
         )
 
     for cs_command in [
@@ -370,13 +370,12 @@ def load_arguments(self, _):
             context.argument(
                 "hostname_type",
                 options_list=["--hostname-type", "--ht"],
-                arg_type=get_enum_type(HostnameType),
-                default=HostnameType.device.value,
+                arg_type=get_enum_type(DeviceHostnameType),
+                default=DeviceHostnameType.device.value,
                 help="Type of hostname to use in the connection string. "
                 "'classic' uses the default hostname, "
-                "'device' uses the TLS 1.3 device hostname, "
-                "'service' uses the TLS 1.3 service hostname. "
-                "The 'device' and 'service' options are only available on GWv2 IoT Hubs.",
+                "'device' uses the TLS 1.3 device hostname. "
+                "Only available on GWv2 IoT Hubs.",
             )
 
     with self.argument_context("iot hub job") as context:

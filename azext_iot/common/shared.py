@@ -85,6 +85,24 @@ class HostnameType(Enum):
     service = "service"
 
 
+class ServiceHostnameType(Enum):
+    """
+    Hostname types for service-side connection strings.
+    """
+
+    classic = "classic"
+    service = "service"
+
+
+class DeviceHostnameType(Enum):
+    """
+    Hostname types for device-side connection strings.
+    """
+
+    classic = "classic"
+    device = "device"
+
+
 class AttestationType(Enum):
     """
     Type of atestation (TMP or certificate based).
