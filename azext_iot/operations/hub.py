@@ -20,6 +20,7 @@ from azure.cli.core.azclierror import (
 )
 from azext_iot.constants import (
     DEVICE_DEVICESCOPE_PREFIX,
+    IOTHUB_PREVIEW_API_VERSION,
     IOTHUB_RENEW_KEY_BATCH_SIZE,
     IOTHUB_THROTTLE_MAX_TRIES,
     IOTHUB_THROTTLE_SLEEP_SEC,
@@ -2406,7 +2407,7 @@ def _fetch_tls_hostnames(cmd, hub_name, resource_group_name, hub_location=None):
 
     # Use regional management endpoint for Canary regions, otherwise standard
     mgmt_host = "management.azure.com"
-    if hub_location and "euap" in hub_location.lower():
+    if hub_location and hub_location.lower().endswith("euap"):
         mgmt_host = f"{hub_location}.management.azure.com"
 
     url = (
@@ -2414,8 +2415,10 @@ def _fetch_tls_hostnames(cmd, hub_name, resource_group_name, hub_location=None):
         f"/resourceGroups/{resource_group_name}"
         f"/providers/Microsoft.Devices/IotHubs/{hub_name}"
     )
-    req = HttpRequest(method="GET", url=url, params={"api-version": "2026-03-01-preview"})
+    req = HttpRequest(method="GET", url=url, params={"api-version": IOTHUB_PREVIEW_API_VERSION})
     resp = client.iot_hub_resource._client.send_request(req)
+    if resp.status_code >= 400:
+        return {"deviceHostName": None, "serviceHostName": None, "gatewayVersion": None}
     data = resp.json()
     props = data.get("properties", {})
     gateway_version = props.get("iotHubDetails", {}).get("gatewayVersion")
