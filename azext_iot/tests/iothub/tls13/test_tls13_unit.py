@@ -29,6 +29,13 @@ class TestResolveHostnameByType:
         result = _resolve_hostname_by_type(fixture_cmd, mock_hub, HostnameType.classic.value)
         assert result == "testhub.azure-devices.net"
 
+    def test_default_returns_classic(self, fixture_cmd, mock_hub):
+        """Default hostname_type is classic — should return classic hostname without any API call."""
+        from azext_iot.operations.hub import _resolve_hostname_by_type
+
+        result = _resolve_hostname_by_type(fixture_cmd, mock_hub, HostnameType.classic.value)
+        assert result == "testhub.azure-devices.net"
+
     def test_device_returns_device_hostname(self, mocker, fixture_cmd, mock_hub):
         from azext_iot.operations.hub import _resolve_hostname_by_type
 
