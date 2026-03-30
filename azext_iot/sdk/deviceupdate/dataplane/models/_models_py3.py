@@ -6,7 +6,6 @@
 # --------------------------------------------------------------------------
 
 import datetime
-import sys
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 from .. import _serialization
@@ -14,11 +13,8 @@ from .. import _serialization
 if TYPE_CHECKING:
     # pylint: disable=unused-import,ungrouped-imports
     from .. import models as _models
-if sys.version_info >= (3, 9):
-    from collections.abc import MutableMapping
-else:
-    from typing import MutableMapping  # type: ignore  # pylint: disable=ungrouped-imports
-JSON = MutableMapping[str, Any] # pylint: disable=unsubscriptable-object
+from collections.abc import MutableMapping
+JSON = MutableMapping[str, Any]  # pylint: disable=unsubscriptable-object
 
 
 class AccessCondition(_serialization.Model):
