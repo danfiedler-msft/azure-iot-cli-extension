@@ -19,9 +19,7 @@ from azure.cli.command_modules.iot.shared import (EndpointType,
                                                   RenewKeyType,
                                                   AuthenticationType)
 
-from azext_iot.sdk.dps.mgmt.models import IotDpsSku, AccessRightsDescription
 
-from azext_iot.sdk.iothub.mgmt.models import IotHubSku
 from .custom import KeyType, SimpleAccessRights
 from azure.cli.command_modules.iot._validators import (validate_policy_permissions,
                                                        validate_retention_days,
@@ -68,7 +66,7 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('location', get_location_type(self.cli_ctx),
                    help='Location of your IoT Hub Device Provisioning Service. '
                    'Default is the location of target resource group.')
-        c.argument('sku', arg_type=get_enum_type(IotDpsSku),
+        c.argument('sku', arg_type=get_enum_type(["S1"]),
                    help='Pricing tier for the IoT Hub Device Provisioning Service.')
         c.argument('unit', help='Units in your IoT Hub Device Provisioning Service.', type=int)
         c.argument('enable_data_residency', arg_type=get_three_state_flag(),
@@ -101,7 +99,8 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
     for subgroup in ['create', 'update']:
         with self.argument_context('iot dps policy {}'.format(subgroup)) as c:
             c.argument('rights', options_list=['--rights', '-r'], nargs='+',
-                       arg_type=get_enum_type(AccessRightsDescription),
+                       arg_type=get_enum_type(["ServiceConfig", "EnrollmentRead", "EnrollmentWrite", "DeviceConnect", 
+                                               "RegistrationStatusRead", "RegistrationStatusWrite"]),
                        help='Access rights for the IoT Hub Device Provisioning Service. '
                             'Use space-separated list for multiple rights.')
 
@@ -166,7 +165,7 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument("etag", options_list=["--etag", "-e"],
                    help="Etag or entity tag corresponding to the last state of the resource."
                         " If no etag is provided the value '*' is used.")
-        c.argument('sku', arg_type=get_enum_type(IotHubSku),
+        c.argument('sku', arg_type=get_enum_type(["F1", "S1", "S2", "S3", "B1", "B2", "B3", "GEN2"]),
                    help='Pricing tier for Azure IoT Hub. '
                         'Note that only one free IoT hub instance (F1) is allowed in each '
                         'subscription. Exception will be thrown if free instances exceed one.')

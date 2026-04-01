@@ -14,7 +14,6 @@ from azext_iot.core.custom import (
     _setup_adr_hub_role_assignments,
     _validate_and_set_adr_properties,
 )
-from azext_iot.sdk.iothub.mgmt.models import DeviceRegistry, IotHubProperties
 from azext_iot.tests.generators import generate_generic_id
 
 # Test constants
@@ -39,14 +38,13 @@ hub_id = f"{rg_id}/providers/Microsoft.Devices/IotHubs/{hub}"
     "existing_properties",
     [
         # existing properties
-        DeviceRegistry(namespace_resource_id="existing_namespace_id", identity_resource_id="existing_identity_id"),
+        {"namespaceResourceId": "existing_namespace_id", "identityResourceId": "existing_identity_id"},
         None,
     ],
 )
 def test_validate_and_set_adr_properties(namespace_id, identity_id, sku, existing_properties):
     """Test ADR properties validation."""
-    instance = Mock(spec=IotHubProperties)
-    instance.device_registry = existing_properties
+    instance = {"deviceRegistry": existing_properties}
 
     # Test behavior based on SKU type and parameters
     if sku == "GEN2":  # Generation2 SKU
@@ -55,9 +53,9 @@ def test_validate_and_set_adr_properties(namespace_id, identity_id, sku, existin
             _validate_and_set_adr_properties(
                 instance=instance, sku=sku, adr_namespace_resource_id=namespace_id, adr_identity_resource_id=identity_id
             )
-            assert instance.device_registry is not None
-            assert instance.device_registry.namespace_resource_id == namespace_id
-            assert instance.device_registry.identity_resource_id == identity_id
+            assert instance["deviceRegistry"] is not None
+            assert instance["deviceRegistry"]["namespaceResourceId"] == namespace_id
+            assert instance["deviceRegistry"]["identityResourceId"] == identity_id
         else:
             # Generation2 SKU missing required parameters - should raise error
             with pytest.raises(RequiredArgumentMissingError) as exc_info:
@@ -84,7 +82,7 @@ def test_validate_and_set_adr_properties(namespace_id, identity_id, sku, existin
                 instance=instance, sku=sku, adr_namespace_resource_id=namespace_id, adr_identity_resource_id=identity_id
             )
             # Verify properties remain unchanged
-            assert instance.device_registry == existing_properties
+            assert instance["deviceRegistry"] == existing_properties
 
 
 class TestSetupADRRoleAssignments(object):
