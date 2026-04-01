@@ -99,7 +99,7 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
     for subgroup in ['create', 'update']:
         with self.argument_context('iot dps policy {}'.format(subgroup)) as c:
             c.argument('rights', options_list=['--rights', '-r'], nargs='+',
-                       arg_type=get_enum_type(["ServiceConfig", "EnrollmentRead", "EnrollmentWrite", "DeviceConnect", 
+                       arg_type=get_enum_type(["ServiceConfig", "EnrollmentRead", "EnrollmentWrite", "DeviceConnect",
                                                "RegistrationStatusRead", "RegistrationStatusWrite"]),
                        help='Access rights for the IoT Hub Device Provisioning Service. '
                             'Use space-separated list for multiple rights.')
