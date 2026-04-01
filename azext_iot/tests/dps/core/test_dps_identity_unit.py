@@ -36,7 +36,7 @@ class TestDPSIdentityAssign(object):
         mock_ensure_rg.return_value = resource_group
 
         mock_client = Mock()
-        mock_dps = {"identity": None, "resourcegroup": resource_group}
+        mock_dps = {"identity": None}
         mock_client.iot_dps_resource.get.return_value = mock_dps
         mock_client.iot_dps_resource.begin_create_or_update.return_value = Mock()
 
@@ -88,13 +88,11 @@ class TestDPSIdentityAssign(object):
 
         mock_client = Mock()
         existing_user_id = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/existing-identity"
-        mock_dps = {
-            "identity": {
-                "type": "UserAssigned",
-                "userAssignedIdentities": {existing_user_id: {}},
-            },
-            "resourcegroup": "test-rg",
+        existing_identity = {
+            "type": "UserAssigned",
+            "userAssignedIdentities": {existing_user_id: {}},
         }
+        mock_dps = {"identity": existing_identity}
         mock_client.iot_dps_resource.get.return_value = mock_dps
         mock_client.iot_dps_resource.begin_create_or_update.return_value = Mock()
 
@@ -115,10 +113,8 @@ class TestDPSIdentityRemove(object):
         mock_ensure_rg.return_value = "test-rg"
 
         mock_client = Mock()
-        mock_dps = {
-            "identity": {"type": "SystemAssigned"},
-            "resourcegroup": "test-rg",
-        }
+        existing_identity = {"type": "SystemAssigned"}
+        mock_dps = {"identity": existing_identity}
         mock_client.iot_dps_resource.get.return_value = mock_dps
         mock_client.iot_dps_resource.begin_create_or_update.return_value = Mock()
 
@@ -135,16 +131,14 @@ class TestDPSIdentityRemove(object):
         mock_client = Mock()
         user_id_to_remove = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/remove-identity"
         user_id_to_keep = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/keep-identity"
-        mock_dps = {
-            "identity": {
-                "type": "UserAssigned",
-                "userAssignedIdentities": {
-                    user_id_to_remove: {},
-                    user_id_to_keep: {},
-                },
+        existing_identity = {
+            "type": "UserAssigned",
+            "userAssignedIdentities": {
+                user_id_to_remove: {},
+                user_id_to_keep: {},
             },
-            "resourcegroup": "test-rg",
         }
+        mock_dps = {"identity": existing_identity}
         mock_client.iot_dps_resource.get.return_value = mock_dps
         mock_client.iot_dps_resource.begin_create_or_update.return_value = Mock()
 
@@ -161,13 +155,11 @@ class TestDPSIdentityRemove(object):
 
         mock_client = Mock()
         user_id = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/test-identity"
-        mock_dps = {
-            "identity": {
-                "type": "SystemAssigned,UserAssigned",
-                "userAssignedIdentities": {user_id: {}},
-            },
-            "resourcegroup": "test-rg",
+        existing_identity = {
+            "type": "SystemAssigned,UserAssigned",
+            "userAssignedIdentities": {user_id: {}},
         }
+        mock_dps = {"identity": existing_identity}
         mock_client.iot_dps_resource.get.return_value = mock_dps
         mock_client.iot_dps_resource.begin_create_or_update.return_value = Mock()
 
@@ -193,7 +185,7 @@ class TestDPSIdentityRemove(object):
         """Test showing DPS identity."""
         mock_client = Mock()
         expected_identity = {"type": "UserAssigned"}
-        mock_dps = {"identity": expected_identity, "resourcegroup": "test-rg"}
+        mock_dps = {"identity": expected_identity}
         mock_client.iot_dps_resource.get.return_value = mock_dps
 
         result = dps_identity_show(mock_client, dps_name="test-dps", resource_group_name="test-rg")
