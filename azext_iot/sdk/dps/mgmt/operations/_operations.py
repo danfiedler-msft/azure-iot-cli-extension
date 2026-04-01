@@ -33,11 +33,11 @@ from azure.core.utils import case_insensitive_dict
 from azure.mgmt.core.exceptions import ARMErrorFormat
 from azure.mgmt.core.polling.arm_polling import ARMPolling
 
-from .. import models as _models
 from .._configuration import IotDpsClientConfiguration
 from .._serialization import Deserializer, Serializer
 from .._vendor import prep_if_match, prep_if_none_match
 
+JSON = MutableMapping[str, Any]
 T = TypeVar("T")
 ClsType = Optional[Callable[[PipelineResponse[HttpRequest, HttpResponse], T, Dict[str, Any]], Any]]
 
@@ -740,7 +740,7 @@ def build_dps_certificate_delete_request(
     certificate_name1: Optional[str] = None,
     certificate_raw_bytes: Optional[bytes] = None,
     certificate_is_verified: Optional[bool] = None,
-    certificate_purpose: Optional[Union[str, _models.CertificatePurpose]] = None,
+    certificate_purpose: Optional[str] = None,
     certificate_created: Optional[datetime.datetime] = None,
     certificate_last_updated: Optional[datetime.datetime] = None,
     certificate_has_private_key: Optional[bool] = None,
@@ -814,7 +814,7 @@ def build_dps_certificate_generate_verification_code_request(  # pylint: disable
     certificate_name1: Optional[str] = None,
     certificate_raw_bytes: Optional[bytes] = None,
     certificate_is_verified: Optional[bool] = None,
-    certificate_purpose: Optional[Union[str, _models.CertificatePurpose]] = None,
+    certificate_purpose: Optional[str] = None,
     certificate_created: Optional[datetime.datetime] = None,
     certificate_last_updated: Optional[datetime.datetime] = None,
     certificate_has_private_key: Optional[bool] = None,
@@ -888,7 +888,7 @@ def build_dps_certificate_verify_certificate_request(  # pylint: disable=name-to
     certificate_name1: Optional[str] = None,
     certificate_raw_bytes: Optional[bytes] = None,
     certificate_is_verified: Optional[bool] = None,
-    certificate_purpose: Optional[Union[str, _models.CertificatePurpose]] = None,
+    certificate_purpose: Optional[str] = None,
     certificate_created: Optional[datetime.datetime] = None,
     certificate_last_updated: Optional[datetime.datetime] = None,
     certificate_has_private_key: Optional[bool] = None,
@@ -964,8 +964,6 @@ class Operations:
         :attr:`operations` attribute.
     """
 
-    models = _models
-
     def __init__(self, *args, **kwargs):
         input_args = list(args)
         self._client: PipelineClient = input_args.pop(0) if input_args else kwargs.pop("client")
@@ -974,17 +972,30 @@ class Operations:
         self._deserialize: Deserializer = input_args.pop(0) if input_args else kwargs.pop("deserializer")
 
     @distributed_trace
-    def list(self, **kwargs: Any) -> Iterable["_models.Operation"]:
+    def list(self, **kwargs: Any) -> Iterable[JSON]:
         """List the operations for the provider.
 
-        :return: An iterator like instance of Operation
-        :rtype: ~azure.core.paging.ItemPaged[~dps.mgmt.models.Operation]
+        :return: An iterator like instance of JSON object
+        :rtype: ~azure.core.paging.ItemPaged[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "display": {
+                        "operation": "str",
+                        "provider": "str",
+                        "resource": "str"
+                    },
+                    "name": "str"
+                }
         """
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models._models.OperationListResult] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -1022,13 +1033,11 @@ class Operations:
             return _request
 
         def extract_data(pipeline_response):
-            deserialized = self._deserialize(
-                _models._models.OperationListResult, pipeline_response  # pylint: disable=protected-access
-            )
-            list_of_elem = deserialized.value
+            deserialized = pipeline_response.http_response.json()
+            list_of_elem = deserialized.get("value", [])
             if cls:
                 list_of_elem = cls(list_of_elem)  # type: ignore
-            return deserialized.next_link or None, iter(list_of_elem)
+            return deserialized.get("nextLink") or None, iter(list_of_elem)
 
         def get_next(next_link=None):
             _request = prepare_request(next_link)
@@ -1041,8 +1050,7 @@ class Operations:
 
             if response.status_code not in [200]:
                 map_error(status_code=response.status_code, response=response, error_map=error_map)
-                error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-                raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+                raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
             return pipeline_response
 
@@ -1059,8 +1067,6 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :attr:`iot_dps_resource` attribute.
     """
 
-    models = _models
-
     def __init__(self, *args, **kwargs):
         input_args = list(args)
         self._client: PipelineClient = input_args.pop(0) if input_args else kwargs.pop("client")
@@ -1070,27 +1076,42 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
     @overload
     def check_provisioning_service_name_availability(  # pylint: disable=name-too-long
-        self, arguments: _models.OperationInputs, *, content_type: str = "application/json", **kwargs: Any
-    ) -> _models.NameAvailabilityInfo:
+        self, arguments: JSON, *, content_type: str = "application/json", **kwargs: Any
+    ) -> JSON:
         """Check if a provisioning service name is available.
 
         Check if a provisioning service name is available. This will validate if the name is
         syntactically valid and if the name is usable.
 
         :param arguments: The request body. Required.
-        :type arguments: ~dps.mgmt.models.OperationInputs
+        :type arguments: JSON
         :keyword content_type: Body Parameter content-type. Content type parameter for JSON body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: NameAvailabilityInfo
-        :rtype: ~dps.mgmt.models.NameAvailabilityInfo
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                arguments = {
+                    "name": "str"
+                }
+
+                # response body for status code(s): 200
+                response == {
+                    "message": "str",
+                    "nameAvailable": bool,
+                    "reason": "str"
+                }
         """
 
     @overload
     def check_provisioning_service_name_availability(  # pylint: disable=name-too-long
         self, arguments: IO[bytes], *, content_type: str = "application/json", **kwargs: Any
-    ) -> _models.NameAvailabilityInfo:
+    ) -> JSON:
         """Check if a provisioning service name is available.
 
         Check if a provisioning service name is available. This will validate if the name is
@@ -1101,26 +1122,50 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :keyword content_type: Body Parameter content-type. Content type parameter for binary body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: NameAvailabilityInfo
-        :rtype: ~dps.mgmt.models.NameAvailabilityInfo
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "message": "str",
+                    "nameAvailable": bool,
+                    "reason": "str"
+                }
         """
 
     @distributed_trace
     def check_provisioning_service_name_availability(  # pylint: disable=name-too-long
-        self, arguments: Union[_models.OperationInputs, IO[bytes]], **kwargs: Any
-    ) -> _models.NameAvailabilityInfo:
+        self, arguments: Union[JSON, IO[bytes]], **kwargs: Any
+    ) -> JSON:
         """Check if a provisioning service name is available.
 
         Check if a provisioning service name is available. This will validate if the name is
         syntactically valid and if the name is usable.
 
-        :param arguments: The request body. Is either a OperationInputs type or a IO[bytes] type.
-         Required.
-        :type arguments: ~dps.mgmt.models.OperationInputs or IO[bytes]
-        :return: NameAvailabilityInfo
-        :rtype: ~dps.mgmt.models.NameAvailabilityInfo
+        :param arguments: The request body. Is either a JSON type or a IO[bytes] type. Required.
+        :type arguments: JSON or IO[bytes]
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                arguments = {
+                    "name": "str"
+                }
+
+                # response body for status code(s): 200
+                response == {
+                    "message": "str",
+                    "nameAvailable": bool,
+                    "reason": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -1134,7 +1179,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         _params = kwargs.pop("params", {}) or {}
 
         content_type: Optional[str] = kwargs.pop("content_type", _headers.pop("Content-Type", None))
-        cls: ClsType[_models.NameAvailabilityInfo] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         content_type = content_type or "application/json"
         _json = None
@@ -1142,7 +1187,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         if isinstance(arguments, (IOBase, bytes)):
             _content = arguments
         else:
-            _json = self._serialize.body(arguments, "OperationInputs")
+            _json = arguments
 
         _request = build_iot_dps_resource_check_provisioning_service_name_availability_request(
             subscription_id=self._config.subscription_id,
@@ -1164,28 +1209,140 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("NameAvailabilityInfo", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @distributed_trace
-    def list_by_subscription(self, **kwargs: Any) -> Iterable["_models.ProvisioningServiceDescription"]:
+    def list_by_subscription(self, **kwargs: Any) -> Iterable[JSON]:
         """List all the provisioning services for a given subscription id.
 
-        :return: An iterator like instance of ProvisioningServiceDescription
-        :rtype: ~azure.core.paging.ItemPaged[~dps.mgmt.models.ProvisioningServiceDescription]
+        :return: An iterator like instance of JSON object
+        :rtype: ~azure.core.paging.ItemPaged[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models._models.ProvisioningServiceDescriptionListResult] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -1224,14 +1381,11 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             return _request
 
         def extract_data(pipeline_response):
-            deserialized = self._deserialize(
-                _models._models.ProvisioningServiceDescriptionListResult,  # pylint: disable=protected-access
-                pipeline_response,
-            )
-            list_of_elem = deserialized.value
+            deserialized = pipeline_response.http_response.json()
+            list_of_elem = deserialized.get("value", [])
             if cls:
                 list_of_elem = cls(list_of_elem)  # type: ignore
-            return deserialized.next_link or None, iter(list_of_elem)
+            return deserialized.get("nextLink") or None, iter(list_of_elem)
 
         def get_next(next_link=None):
             _request = prepare_request(next_link)
@@ -1244,30 +1398,137 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
             if response.status_code not in [200]:
                 map_error(status_code=response.status_code, response=response, error_map=error_map)
-                error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-                raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+                raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
             return pipeline_response
 
         return ItemPaged(get_next, extract_data)
 
     @distributed_trace
-    def list_by_resource_group(
-        self, resource_group_name: str, **kwargs: Any
-    ) -> Iterable["_models.ProvisioningServiceDescription"]:
+    def list_by_resource_group(self, resource_group_name: str, **kwargs: Any) -> Iterable[JSON]:
         """Get a list of all provisioning services in the given resource group.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
          Required.
         :type resource_group_name: str
-        :return: An iterator like instance of ProvisioningServiceDescription
-        :rtype: ~azure.core.paging.ItemPaged[~dps.mgmt.models.ProvisioningServiceDescription]
+        :return: An iterator like instance of JSON object
+        :rtype: ~azure.core.paging.ItemPaged[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models._models.ProvisioningServiceDescriptionListResult] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -1307,14 +1568,11 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             return _request
 
         def extract_data(pipeline_response):
-            deserialized = self._deserialize(
-                _models._models.ProvisioningServiceDescriptionListResult,  # pylint: disable=protected-access
-                pipeline_response,
-            )
-            list_of_elem = deserialized.value
+            deserialized = pipeline_response.http_response.json()
+            list_of_elem = deserialized.get("value", [])
             if cls:
                 list_of_elem = cls(list_of_elem)  # type: ignore
-            return deserialized.next_link or None, iter(list_of_elem)
+            return deserialized.get("nextLink") or None, iter(list_of_elem)
 
         def get_next(next_link=None):
             _request = prepare_request(next_link)
@@ -1327,17 +1585,14 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
             if response.status_code not in [200]:
                 map_error(status_code=response.status_code, response=response, error_map=error_map)
-                error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-                raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+                raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
             return pipeline_response
 
         return ItemPaged(get_next, extract_data)
 
     @distributed_trace
-    def get(
-        self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any
-    ) -> _models.ProvisioningServiceDescription:
+    def get(self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any) -> JSON:
         """Get the metadata of the provisioning service without SAS keys.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -1345,9 +1600,119 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type resource_group_name: str
         :param provisioning_service_name: Name of the provisioning service to retrieve. Required.
         :type provisioning_service_name: str
-        :return: ProvisioningServiceDescription
-        :rtype: ~dps.mgmt.models.ProvisioningServiceDescription
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -1360,7 +1725,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.ProvisioningServiceDescription] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_iot_dps_resource_get_request(
             resource_group_name=resource_group_name,
@@ -1381,21 +1746,23 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("ProvisioningServiceDescription", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     def _create_or_update_initial(
         self,
         resource_group_name: str,
         provisioning_service_name: str,
-        iot_dps_description: Union[_models.ProvisioningServiceDescription, IO[bytes]],
+        iot_dps_description: Union[JSON, IO[bytes]],
         **kwargs: Any
     ) -> Iterator[bytes]:
         error_map: MutableMapping = {
@@ -1418,7 +1785,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         if isinstance(iot_dps_description, (IOBase, bytes)):
             _content = iot_dps_description
         else:
-            _json = self._serialize.body(iot_dps_description, "ProvisioningServiceDescription")
+            _json = iot_dps_description
 
         _request = build_iot_dps_resource_create_or_update_request(
             resource_group_name=resource_group_name,
@@ -1446,8 +1813,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             except (StreamConsumedError, StreamClosedError):
                 pass
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
         response_headers = {}
         if response.status_code == 201:
@@ -1457,20 +1823,20 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         deserialized = response.iter_bytes()
 
         if cls:
-            return cls(pipeline_response, deserialized, response_headers)  # type: ignore
+            return cls(pipeline_response, cast(Iterator[bytes], deserialized), response_headers)  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(Iterator[bytes], deserialized)  # type: ignore
 
     @overload
     def begin_create_or_update(
         self,
         resource_group_name: str,
         provisioning_service_name: str,
-        iot_dps_description: _models.ProvisioningServiceDescription,
+        iot_dps_description: JSON,
         *,
         content_type: str = "application/json",
         **kwargs: Any
-    ) -> LROPoller[_models.ProvisioningServiceDescription]:
+    ) -> LROPoller[JSON]:
         """Create or update the metadata of the provisioning service. The usual pattern to modify a
         property is to retrieve the provisioning service metadata and security metadata, and then
         combine them with the modified values in a new body to update the provisioning service.
@@ -1482,13 +1848,230 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type provisioning_service_name: str
         :param iot_dps_description: Description of the provisioning service to create or update.
          Required.
-        :type iot_dps_description: ~dps.mgmt.models.ProvisioningServiceDescription
+        :type iot_dps_description: JSON
         :keyword content_type: Body Parameter content-type. Content type parameter for JSON body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: An instance of LROPoller that returns ProvisioningServiceDescription
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.ProvisioningServiceDescription]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                iot_dps_description = {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
+
+                # response body for status code(s): 200, 201
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @overload
@@ -1500,7 +2083,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         *,
         content_type: str = "application/json",
         **kwargs: Any
-    ) -> LROPoller[_models.ProvisioningServiceDescription]:
+    ) -> LROPoller[JSON]:
         """Create or update the metadata of the provisioning service. The usual pattern to modify a
         property is to retrieve the provisioning service metadata and security metadata, and then
         combine them with the modified values in a new body to update the provisioning service.
@@ -1516,9 +2099,119 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :keyword content_type: Body Parameter content-type. Content type parameter for binary body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: An instance of LROPoller that returns ProvisioningServiceDescription
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.ProvisioningServiceDescription]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200, 201
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @distributed_trace
@@ -1526,9 +2219,9 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         self,
         resource_group_name: str,
         provisioning_service_name: str,
-        iot_dps_description: Union[_models.ProvisioningServiceDescription, IO[bytes]],
+        iot_dps_description: Union[JSON, IO[bytes]],
         **kwargs: Any
-    ) -> LROPoller[_models.ProvisioningServiceDescription]:
+    ) -> LROPoller[JSON]:
         """Create or update the metadata of the provisioning service. The usual pattern to modify a
         property is to retrieve the provisioning service metadata and security metadata, and then
         combine them with the modified values in a new body to update the provisioning service.
@@ -1539,17 +2232,234 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :param provisioning_service_name: Name of the provisioning service to retrieve. Required.
         :type provisioning_service_name: str
         :param iot_dps_description: Description of the provisioning service to create or update. Is
-         either a ProvisioningServiceDescription type or a IO[bytes] type. Required.
-        :type iot_dps_description: ~dps.mgmt.models.ProvisioningServiceDescription or IO[bytes]
-        :return: An instance of LROPoller that returns ProvisioningServiceDescription
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.ProvisioningServiceDescription]
+         either a JSON type or a IO[bytes] type. Required.
+        :type iot_dps_description: JSON or IO[bytes]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                iot_dps_description = {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
+
+                # response body for status code(s): 200, 201
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
         _headers = case_insensitive_dict(kwargs.pop("headers", {}) or {})
         _params = kwargs.pop("params", {}) or {}
 
         content_type: Optional[str] = kwargs.pop("content_type", _headers.pop("Content-Type", None))
-        cls: ClsType[_models.ProvisioningServiceDescription] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
         polling: Union[bool, PollingMethod] = kwargs.pop("polling", True)
         lro_delay = kwargs.pop("polling_interval", self._config.polling_interval)
         cont_token: Optional[str] = kwargs.pop("continuation_token", None)
@@ -1568,7 +2478,11 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         kwargs.pop("error_map", None)
 
         def get_long_running_output(pipeline_response):
-            deserialized = self._deserialize("ProvisioningServiceDescription", pipeline_response.http_response)
+            response = pipeline_response.http_response
+            if response.content:
+                deserialized = response.json()
+            else:
+                deserialized = None
             if cls:
                 return cls(pipeline_response, deserialized, {})  # type: ignore
             return deserialized
@@ -1582,21 +2496,19 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         else:
             polling_method = polling
         if cont_token:
-            return LROPoller[_models.ProvisioningServiceDescription].from_continuation_token(
+            return LROPoller[JSON].from_continuation_token(
                 polling_method=polling_method,
                 continuation_token=cont_token,
                 client=self._client,
                 deserialization_callback=get_long_running_output,
             )
-        return LROPoller[_models.ProvisioningServiceDescription](
-            self._client, raw_result, get_long_running_output, polling_method  # type: ignore
-        )
+        return LROPoller[JSON](self._client, raw_result, get_long_running_output, polling_method)  # type: ignore
 
     def _update_initial(
         self,
         resource_group_name: str,
         provisioning_service_name: str,
-        provisioning_service_tags: Union[_models.TagsResource, IO[bytes]],
+        provisioning_service_tags: Union[JSON, IO[bytes]],
         **kwargs: Any
     ) -> Iterator[bytes]:
         error_map: MutableMapping = {
@@ -1619,7 +2531,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         if isinstance(provisioning_service_tags, (IOBase, bytes)):
             _content = provisioning_service_tags
         else:
-            _json = self._serialize.body(provisioning_service_tags, "TagsResource")
+            _json = provisioning_service_tags
 
         _request = build_iot_dps_resource_update_request(
             resource_group_name=resource_group_name,
@@ -1647,8 +2559,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             except (StreamConsumedError, StreamClosedError):
                 pass
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorResponse, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
         response_headers = {}
         response_headers["Location"] = self._deserialize("str", response.headers.get("Location"))
@@ -1656,20 +2567,20 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         deserialized = response.iter_bytes()
 
         if cls:
-            return cls(pipeline_response, deserialized, response_headers)  # type: ignore
+            return cls(pipeline_response, cast(Iterator[bytes], deserialized), response_headers)  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(Iterator[bytes], deserialized)  # type: ignore
 
     @overload
     def begin_update(
         self,
         resource_group_name: str,
         provisioning_service_name: str,
-        provisioning_service_tags: _models.TagsResource,
+        provisioning_service_tags: JSON,
         *,
         content_type: str = "application/json",
         **kwargs: Any
-    ) -> LROPoller[_models.ProvisioningServiceDescription]:
+    ) -> LROPoller[JSON]:
         """Update an existing provisioning service's tags. to update other fields use the CreateOrUpdate
         method.
 
@@ -1680,13 +2591,130 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type provisioning_service_name: str
         :param provisioning_service_tags: Updated tag information to set into the provisioning service
          instance. Required.
-        :type provisioning_service_tags: ~dps.mgmt.models.TagsResource
+        :type provisioning_service_tags: JSON
         :keyword content_type: Body Parameter content-type. Content type parameter for JSON body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: An instance of LROPoller that returns ProvisioningServiceDescription
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.ProvisioningServiceDescription]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                provisioning_service_tags = {
+                    "tags": {
+                        "str": "str"
+                    }
+                }
+
+                # response body for status code(s): 200
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @overload
@@ -1698,7 +2726,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         *,
         content_type: str = "application/json",
         **kwargs: Any
-    ) -> LROPoller[_models.ProvisioningServiceDescription]:
+    ) -> LROPoller[JSON]:
         """Update an existing provisioning service's tags. to update other fields use the CreateOrUpdate
         method.
 
@@ -1713,9 +2741,119 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :keyword content_type: Body Parameter content-type. Content type parameter for binary body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: An instance of LROPoller that returns ProvisioningServiceDescription
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.ProvisioningServiceDescription]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @distributed_trace
@@ -1723,9 +2861,9 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         self,
         resource_group_name: str,
         provisioning_service_name: str,
-        provisioning_service_tags: Union[_models.TagsResource, IO[bytes]],
+        provisioning_service_tags: Union[JSON, IO[bytes]],
         **kwargs: Any
-    ) -> LROPoller[_models.ProvisioningServiceDescription]:
+    ) -> LROPoller[JSON]:
         """Update an existing provisioning service's tags. to update other fields use the CreateOrUpdate
         method.
 
@@ -1735,17 +2873,134 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :param provisioning_service_name: Name of the provisioning service to retrieve. Required.
         :type provisioning_service_name: str
         :param provisioning_service_tags: Updated tag information to set into the provisioning service
-         instance. Is either a TagsResource type or a IO[bytes] type. Required.
-        :type provisioning_service_tags: ~dps.mgmt.models.TagsResource or IO[bytes]
-        :return: An instance of LROPoller that returns ProvisioningServiceDescription
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.ProvisioningServiceDescription]
+         instance. Is either a JSON type or a IO[bytes] type. Required.
+        :type provisioning_service_tags: JSON or IO[bytes]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                provisioning_service_tags = {
+                    "tags": {
+                        "str": "str"
+                    }
+                }
+
+                # response body for status code(s): 200
+                response == {
+                    "location": "str",
+                    "properties": {
+                        "allocationPolicy": "str",
+                        "authorizationPolicies": [
+                            {
+                                "keyName": "str",
+                                "rights": "str",
+                                "primaryKey": "str",
+                                "secondaryKey": "str"
+                            }
+                        ],
+                        "deviceProvisioningHostName": "str",
+                        "deviceRegistryNamespace": {
+                            "authenticationType": "str",
+                            "resourceId": "str",
+                            "selectedUserAssignedIdentityResourceId": "str"
+                        },
+                        "enableDataResidency": bool,
+                        "idScope": "str",
+                        "iotHubs": [
+                            {
+                                "location": "str",
+                                "allocationWeight": 0,
+                                "applyAllocationPolicy": bool,
+                                "authenticationType": "str",
+                                "connectionString": "str",
+                                "hostName": "str",
+                                "name": "str",
+                                "selectedUserAssignedIdentityResourceId": "str"
+                            }
+                        ],
+                        "ipFilterRules": [
+                            {
+                                "action": "str",
+                                "filterName": "str",
+                                "ipMask": "str",
+                                "target": "str"
+                            }
+                        ],
+                        "portalOperationsHostName": "str",
+                        "privateEndpointConnections": [
+                            {
+                                "properties": {
+                                    "privateLinkServiceConnectionState": {
+                                        "description": "str",
+                                        "status": "str",
+                                        "actionsRequired": "str"
+                                    },
+                                    "privateEndpoint": {
+                                        "id": "str"
+                                    }
+                                },
+                                "id": "str",
+                                "name": "str",
+                                "systemData": {
+                                    "createdAt": "2020-02-20 00:00:00",
+                                    "createdBy": "str",
+                                    "createdByType": "str",
+                                    "lastModifiedAt": "2020-02-20 00:00:00",
+                                    "lastModifiedBy": "str",
+                                    "lastModifiedByType": "str"
+                                },
+                                "type": "str"
+                            }
+                        ],
+                        "provisioningState": "str",
+                        "publicNetworkAccess": "str",
+                        "serviceOperationsHostName": "str",
+                        "state": "str"
+                    },
+                    "sku": {
+                        "capacity": 0,
+                        "name": "str",
+                        "tier": "str"
+                    },
+                    "etag": "str",
+                    "id": "str",
+                    "identity": {
+                        "type": "str",
+                        "principalId": "str",
+                        "tenantId": "str",
+                        "userAssignedIdentities": {
+                            "str": {
+                                "clientId": "str",
+                                "principalId": "str"
+                            }
+                        }
+                    },
+                    "name": "str",
+                    "resourcegroup": "str",
+                    "subscriptionid": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "tags": {
+                        "str": "str"
+                    },
+                    "type": "str"
+                }
         """
         _headers = case_insensitive_dict(kwargs.pop("headers", {}) or {})
         _params = kwargs.pop("params", {}) or {}
 
         content_type: Optional[str] = kwargs.pop("content_type", _headers.pop("Content-Type", None))
-        cls: ClsType[_models.ProvisioningServiceDescription] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
         polling: Union[bool, PollingMethod] = kwargs.pop("polling", True)
         lro_delay = kwargs.pop("polling_interval", self._config.polling_interval)
         cont_token: Optional[str] = kwargs.pop("continuation_token", None)
@@ -1768,7 +3023,10 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             response = pipeline_response.http_response
             response_headers["Location"] = self._deserialize("str", response.headers.get("Location"))
 
-            deserialized = self._deserialize("ProvisioningServiceDescription", pipeline_response.http_response)
+            if response.content:
+                deserialized = response.json()
+            else:
+                deserialized = None
             if cls:
                 return cls(pipeline_response, deserialized, response_headers)  # type: ignore
             return deserialized
@@ -1782,15 +3040,13 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         else:
             polling_method = polling
         if cont_token:
-            return LROPoller[_models.ProvisioningServiceDescription].from_continuation_token(
+            return LROPoller[JSON].from_continuation_token(
                 polling_method=polling_method,
                 continuation_token=cont_token,
                 client=self._client,
                 deserialization_callback=get_long_running_output,
             )
-        return LROPoller[_models.ProvisioningServiceDescription](
-            self._client, raw_result, get_long_running_output, polling_method  # type: ignore
-        )
+        return LROPoller[JSON](self._client, raw_result, get_long_running_output, polling_method)  # type: ignore
 
     def _delete_initial(
         self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any
@@ -1831,8 +3087,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             except (StreamConsumedError, StreamClosedError):
                 pass
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
         response_headers = {}
         if response.status_code == 202:
@@ -1842,9 +3097,9 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         deserialized = response.iter_bytes()
 
         if cls:
-            return cls(pipeline_response, deserialized, response_headers)  # type: ignore
+            return cls(pipeline_response, cast(Iterator[bytes], deserialized), response_headers)  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(Iterator[bytes], deserialized)  # type: ignore
 
     @distributed_trace
     def begin_delete(self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any) -> LROPoller[None]:
@@ -1902,7 +3157,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
     @distributed_trace
     def list_keys_for_key_name(
         self, resource_group_name: str, provisioning_service_name: str, key_name: str, **kwargs: Any
-    ) -> _models.SharedAccessSignatureAuthorizationRuleAccessRightsDescription:
+    ) -> JSON:
         """List primary and secondary keys for a specific key name.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -1912,9 +3167,20 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type provisioning_service_name: str
         :param key_name: Logical key name to get key-values for. Required.
         :type key_name: str
-        :return: SharedAccessSignatureAuthorizationRuleAccessRightsDescription
-        :rtype: ~dps.mgmt.models.SharedAccessSignatureAuthorizationRuleAccessRightsDescription
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "keyName": "str",
+                    "rights": "str",
+                    "primaryKey": "str",
+                    "secondaryKey": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -1927,7 +3193,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.SharedAccessSignatureAuthorizationRuleAccessRightsDescription] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_iot_dps_resource_list_keys_for_key_name_request(
             resource_group_name=resource_group_name,
@@ -1949,22 +3215,20 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize(
-            "SharedAccessSignatureAuthorizationRuleAccessRightsDescription", pipeline_response.http_response
-        )
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @distributed_trace
-    def list_keys(
-        self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any
-    ) -> Iterable["_models.SharedAccessSignatureAuthorizationRuleAccessRightsDescription"]:
+    def list_keys(self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any) -> Iterable[JSON]:
         """List the primary and secondary keys for a provisioning service.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -1972,16 +3236,25 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type resource_group_name: str
         :param provisioning_service_name: Name of the provisioning service to retrieve. Required.
         :type provisioning_service_name: str
-        :return: An iterator like instance of
-         SharedAccessSignatureAuthorizationRuleAccessRightsDescription
-        :rtype:
-         ~azure.core.paging.ItemPaged[~dps.mgmt.models.SharedAccessSignatureAuthorizationRuleAccessRightsDescription]
+        :return: An iterator like instance of JSON object
+        :rtype: ~azure.core.paging.ItemPaged[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "keyName": "str",
+                    "rights": "str",
+                    "primaryKey": "str",
+                    "secondaryKey": "str"
+                }
         """
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models._models.SharedAccessSignatureAuthorizationRuleListResult] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2022,14 +3295,11 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             return _request
 
         def extract_data(pipeline_response):
-            deserialized = self._deserialize(
-                _models._models.SharedAccessSignatureAuthorizationRuleListResult,  # pylint: disable=protected-access
-                pipeline_response,
-            )
-            list_of_elem = deserialized.value
+            deserialized = pipeline_response.http_response.json()
+            list_of_elem = deserialized.get("value", [])
             if cls:
                 list_of_elem = cls(list_of_elem)  # type: ignore
-            return deserialized.next_link or None, iter(list_of_elem)
+            return deserialized.get("nextLink") or None, iter(list_of_elem)
 
         def get_next(next_link=None):
             _request = prepare_request(next_link)
@@ -2042,8 +3312,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
             if response.status_code not in [200]:
                 map_error(status_code=response.status_code, response=response, error_map=error_map)
-                error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-                raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+                raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
             return pipeline_response
 
@@ -2058,7 +3327,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         *,
         asyncinfo: str = "true",
         **kwargs: Any
-    ) -> _models.AsyncOperationResult:
+    ) -> JSON:
         """Gets the status of a long running operation, such as create, update or delete a provisioning
         service.
 
@@ -2073,9 +3342,22 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :keyword asyncinfo: Async header used to poll on the status of the operation, obtained while
          creating the long running operation. Default value is "true".
         :paramtype asyncinfo: str
-        :return: AsyncOperationResult
-        :rtype: ~dps.mgmt.models.AsyncOperationResult
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "error": {
+                        "code": "str",
+                        "details": "str",
+                        "message": "str"
+                    },
+                    "status": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2088,7 +3370,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.AsyncOperationResult] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_iot_dps_resource_get_operation_result_request(
             resource_group_name=resource_group_name,
@@ -2111,20 +3393,22 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("AsyncOperationResult", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @distributed_trace
     def list_private_endpoint_connections(
         self, resource_group_name: str, resource_name: str, **kwargs: Any
-    ) -> List[_models.PrivateEndpointConnection]:
+    ) -> List[JSON]:
         """List private endpoint connection properties.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2132,9 +3416,39 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type resource_group_name: str
         :param resource_name: Name of the provisioning service to retrieve. Required.
         :type resource_name: str
-        :return: list of PrivateEndpointConnection
-        :rtype: list[~dps.mgmt.models.PrivateEndpointConnection]
+        :return: list of JSON object
+        :rtype: list[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == [
+                    {
+                        "properties": {
+                            "privateLinkServiceConnectionState": {
+                                "description": "str",
+                                "status": "str",
+                                "actionsRequired": "str"
+                            },
+                            "privateEndpoint": {
+                                "id": "str"
+                            }
+                        },
+                        "id": "str",
+                        "name": "str",
+                        "systemData": {
+                            "createdAt": "2020-02-20 00:00:00",
+                            "createdBy": "str",
+                            "createdByType": "str",
+                            "lastModifiedAt": "2020-02-20 00:00:00",
+                            "lastModifiedBy": "str",
+                            "lastModifiedByType": "str"
+                        },
+                        "type": "str"
+                    }
+                ]
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2147,7 +3461,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[List[_models.PrivateEndpointConnection]] = kwargs.pop("cls", None)
+        cls: ClsType[List[JSON]] = kwargs.pop("cls", None)
 
         _request = build_iot_dps_resource_list_private_endpoint_connections_request(
             resource_group_name=resource_group_name,
@@ -2168,20 +3482,22 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("[PrivateEndpointConnection]", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(List[JSON], deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(List[JSON], deserialized)  # type: ignore
 
     @distributed_trace
     def get_private_endpoint_connection(
         self, resource_group_name: str, resource_name: str, private_endpoint_connection_name: str, **kwargs: Any
-    ) -> _models.PrivateEndpointConnection:
+    ) -> JSON:
         """Get private endpoint connection properties.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2191,9 +3507,37 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type resource_name: str
         :param private_endpoint_connection_name: The name of the private endpoint connection. Required.
         :type private_endpoint_connection_name: str
-        :return: PrivateEndpointConnection
-        :rtype: ~dps.mgmt.models.PrivateEndpointConnection
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "properties": {
+                        "privateLinkServiceConnectionState": {
+                            "description": "str",
+                            "status": "str",
+                            "actionsRequired": "str"
+                        },
+                        "privateEndpoint": {
+                            "id": "str"
+                        }
+                    },
+                    "id": "str",
+                    "name": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2206,7 +3550,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.PrivateEndpointConnection] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_iot_dps_resource_get_private_endpoint_connection_request(
             resource_group_name=resource_group_name,
@@ -2228,22 +3572,24 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("PrivateEndpointConnection", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     def _create_or_update_private_endpoint_connection_initial(  # pylint: disable=name-too-long
         self,
         resource_group_name: str,
         resource_name: str,
         private_endpoint_connection_name: str,
-        private_endpoint_connection: Union[_models.PrivateEndpointConnection, IO[bytes]],
+        private_endpoint_connection: Union[JSON, IO[bytes]],
         **kwargs: Any
     ) -> Iterator[bytes]:
         error_map: MutableMapping = {
@@ -2266,7 +3612,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         if isinstance(private_endpoint_connection, (IOBase, bytes)):
             _content = private_endpoint_connection
         else:
-            _json = self._serialize.body(private_endpoint_connection, "PrivateEndpointConnection")
+            _json = private_endpoint_connection
 
         _request = build_iot_dps_resource_create_or_update_private_endpoint_connection_request(
             resource_group_name=resource_group_name,
@@ -2295,8 +3641,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             except (StreamConsumedError, StreamClosedError):
                 pass
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
         response_headers = {}
         if response.status_code == 201:
@@ -2306,9 +3651,9 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         deserialized = response.iter_bytes()
 
         if cls:
-            return cls(pipeline_response, deserialized, response_headers)  # type: ignore
+            return cls(pipeline_response, cast(Iterator[bytes], deserialized), response_headers)  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(Iterator[bytes], deserialized)  # type: ignore
 
     @overload
     def begin_create_or_update_private_endpoint_connection(  # pylint: disable=name-too-long
@@ -2316,11 +3661,11 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         resource_group_name: str,
         resource_name: str,
         private_endpoint_connection_name: str,
-        private_endpoint_connection: _models.PrivateEndpointConnection,
+        private_endpoint_connection: JSON,
         *,
         content_type: str = "application/json",
         **kwargs: Any
-    ) -> LROPoller[_models.PrivateEndpointConnection]:
+    ) -> LROPoller[JSON]:
         """Create or update the status of a private endpoint connection with the specified name.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2332,13 +3677,66 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type private_endpoint_connection_name: str
         :param private_endpoint_connection: The private endpoint connection with updated properties.
          Required.
-        :type private_endpoint_connection: ~dps.mgmt.models.PrivateEndpointConnection
+        :type private_endpoint_connection: JSON
         :keyword content_type: Body Parameter content-type. Content type parameter for JSON body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: An instance of LROPoller that returns PrivateEndpointConnection
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.PrivateEndpointConnection]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                private_endpoint_connection = {
+                    "properties": {
+                        "privateLinkServiceConnectionState": {
+                            "description": "str",
+                            "status": "str",
+                            "actionsRequired": "str"
+                        },
+                        "privateEndpoint": {
+                            "id": "str"
+                        }
+                    },
+                    "id": "str",
+                    "name": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
+
+                # response body for status code(s): 200, 201
+                response == {
+                    "properties": {
+                        "privateLinkServiceConnectionState": {
+                            "description": "str",
+                            "status": "str",
+                            "actionsRequired": "str"
+                        },
+                        "privateEndpoint": {
+                            "id": "str"
+                        }
+                    },
+                    "id": "str",
+                    "name": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @overload
@@ -2351,7 +3749,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         *,
         content_type: str = "application/json",
         **kwargs: Any
-    ) -> LROPoller[_models.PrivateEndpointConnection]:
+    ) -> LROPoller[JSON]:
         """Create or update the status of a private endpoint connection with the specified name.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2367,9 +3765,37 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :keyword content_type: Body Parameter content-type. Content type parameter for binary body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: An instance of LROPoller that returns PrivateEndpointConnection
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.PrivateEndpointConnection]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200, 201
+                response == {
+                    "properties": {
+                        "privateLinkServiceConnectionState": {
+                            "description": "str",
+                            "status": "str",
+                            "actionsRequired": "str"
+                        },
+                        "privateEndpoint": {
+                            "id": "str"
+                        }
+                    },
+                    "id": "str",
+                    "name": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @distributed_trace
@@ -2378,9 +3804,9 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         resource_group_name: str,
         resource_name: str,
         private_endpoint_connection_name: str,
-        private_endpoint_connection: Union[_models.PrivateEndpointConnection, IO[bytes]],
+        private_endpoint_connection: Union[JSON, IO[bytes]],
         **kwargs: Any
-    ) -> LROPoller[_models.PrivateEndpointConnection]:
+    ) -> LROPoller[JSON]:
         """Create or update the status of a private endpoint connection with the specified name.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2391,17 +3817,70 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :param private_endpoint_connection_name: The name of the private endpoint connection. Required.
         :type private_endpoint_connection_name: str
         :param private_endpoint_connection: The private endpoint connection with updated properties. Is
-         either a PrivateEndpointConnection type or a IO[bytes] type. Required.
-        :type private_endpoint_connection: ~dps.mgmt.models.PrivateEndpointConnection or IO[bytes]
-        :return: An instance of LROPoller that returns PrivateEndpointConnection
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.PrivateEndpointConnection]
+         either a JSON type or a IO[bytes] type. Required.
+        :type private_endpoint_connection: JSON or IO[bytes]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                private_endpoint_connection = {
+                    "properties": {
+                        "privateLinkServiceConnectionState": {
+                            "description": "str",
+                            "status": "str",
+                            "actionsRequired": "str"
+                        },
+                        "privateEndpoint": {
+                            "id": "str"
+                        }
+                    },
+                    "id": "str",
+                    "name": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
+
+                # response body for status code(s): 200, 201
+                response == {
+                    "properties": {
+                        "privateLinkServiceConnectionState": {
+                            "description": "str",
+                            "status": "str",
+                            "actionsRequired": "str"
+                        },
+                        "privateEndpoint": {
+                            "id": "str"
+                        }
+                    },
+                    "id": "str",
+                    "name": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
         _headers = case_insensitive_dict(kwargs.pop("headers", {}) or {})
         _params = kwargs.pop("params", {}) or {}
 
         content_type: Optional[str] = kwargs.pop("content_type", _headers.pop("Content-Type", None))
-        cls: ClsType[_models.PrivateEndpointConnection] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
         polling: Union[bool, PollingMethod] = kwargs.pop("polling", True)
         lro_delay = kwargs.pop("polling_interval", self._config.polling_interval)
         cont_token: Optional[str] = kwargs.pop("continuation_token", None)
@@ -2421,7 +3900,11 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         kwargs.pop("error_map", None)
 
         def get_long_running_output(pipeline_response):
-            deserialized = self._deserialize("PrivateEndpointConnection", pipeline_response.http_response)
+            response = pipeline_response.http_response
+            if response.content:
+                deserialized = response.json()
+            else:
+                deserialized = None
             if cls:
                 return cls(pipeline_response, deserialized, {})  # type: ignore
             return deserialized
@@ -2435,15 +3918,13 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         else:
             polling_method = polling
         if cont_token:
-            return LROPoller[_models.PrivateEndpointConnection].from_continuation_token(
+            return LROPoller[JSON].from_continuation_token(
                 polling_method=polling_method,
                 continuation_token=cont_token,
                 client=self._client,
                 deserialization_callback=get_long_running_output,
             )
-        return LROPoller[_models.PrivateEndpointConnection](
-            self._client, raw_result, get_long_running_output, polling_method  # type: ignore
-        )
+        return LROPoller[JSON](self._client, raw_result, get_long_running_output, polling_method)  # type: ignore
 
     def _delete_private_endpoint_connection_initial(  # pylint: disable=name-too-long
         self, resource_group_name: str, resource_name: str, private_endpoint_connection_name: str, **kwargs: Any
@@ -2485,8 +3966,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             except (StreamConsumedError, StreamClosedError):
                 pass
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
         response_headers = {}
         if response.status_code == 202:
@@ -2496,14 +3976,14 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         deserialized = response.iter_bytes()
 
         if cls:
-            return cls(pipeline_response, deserialized, response_headers)  # type: ignore
+            return cls(pipeline_response, cast(Iterator[bytes], deserialized), response_headers)  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(Iterator[bytes], deserialized)  # type: ignore
 
     @distributed_trace
     def begin_delete_private_endpoint_connection(
         self, resource_group_name: str, resource_name: str, private_endpoint_connection_name: str, **kwargs: Any
-    ) -> LROPoller[_models.PrivateEndpointConnection]:
+    ) -> LROPoller[JSON]:
         """Delete private endpoint connection with the specified name.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2513,14 +3993,42 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type resource_name: str
         :param private_endpoint_connection_name: The name of the private endpoint connection. Required.
         :type private_endpoint_connection_name: str
-        :return: An instance of LROPoller that returns PrivateEndpointConnection
-        :rtype: ~azure.core.polling.LROPoller[~dps.mgmt.models.PrivateEndpointConnection]
+        :return: An instance of LROPoller that returns JSON object
+        :rtype: ~azure.core.polling.LROPoller[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200, 202
+                response == {
+                    "properties": {
+                        "privateLinkServiceConnectionState": {
+                            "description": "str",
+                            "status": "str",
+                            "actionsRequired": "str"
+                        },
+                        "privateEndpoint": {
+                            "id": "str"
+                        }
+                    },
+                    "id": "str",
+                    "name": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.PrivateEndpointConnection] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
         polling: Union[bool, PollingMethod] = kwargs.pop("polling", True)
         lro_delay = kwargs.pop("polling_interval", self._config.polling_interval)
         cont_token: Optional[str] = kwargs.pop("continuation_token", None)
@@ -2538,7 +4046,11 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         kwargs.pop("error_map", None)
 
         def get_long_running_output(pipeline_response):
-            deserialized = self._deserialize("PrivateEndpointConnection", pipeline_response.http_response)
+            response = pipeline_response.http_response
+            if response.content:
+                deserialized = response.json()
+            else:
+                deserialized = None
             if cls:
                 return cls(pipeline_response, deserialized, {})  # type: ignore
             return deserialized
@@ -2552,20 +4064,16 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         else:
             polling_method = polling
         if cont_token:
-            return LROPoller[_models.PrivateEndpointConnection].from_continuation_token(
+            return LROPoller[JSON].from_continuation_token(
                 polling_method=polling_method,
                 continuation_token=cont_token,
                 client=self._client,
                 deserialization_callback=get_long_running_output,
             )
-        return LROPoller[_models.PrivateEndpointConnection](
-            self._client, raw_result, get_long_running_output, polling_method  # type: ignore
-        )
+        return LROPoller[JSON](self._client, raw_result, get_long_running_output, polling_method)  # type: ignore
 
     @distributed_trace
-    def list_private_link_resources(
-        self, resource_group_name: str, resource_name: str, **kwargs: Any
-    ) -> _models.PrivateLinkResources:
+    def list_private_link_resources(self, resource_group_name: str, resource_name: str, **kwargs: Any) -> JSON:
         """List private link resources for the given provisioning service.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2573,9 +4081,40 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type resource_group_name: str
         :param resource_name: Name of the provisioning service to retrieve. Required.
         :type resource_name: str
-        :return: PrivateLinkResources
-        :rtype: ~dps.mgmt.models.PrivateLinkResources
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "value": [
+                        {
+                            "properties": {
+                                "groupId": "str",
+                                "requiredMembers": [
+                                    "str"
+                                ],
+                                "requiredZoneNames": [
+                                    "str"
+                                ]
+                            },
+                            "id": "str",
+                            "name": "str",
+                            "systemData": {
+                                "createdAt": "2020-02-20 00:00:00",
+                                "createdBy": "str",
+                                "createdByType": "str",
+                                "lastModifiedAt": "2020-02-20 00:00:00",
+                                "lastModifiedBy": "str",
+                                "lastModifiedByType": "str"
+                            },
+                            "type": "str"
+                        }
+                    ]
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2588,7 +4127,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.PrivateLinkResources] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_iot_dps_resource_list_private_link_resources_request(
             resource_group_name=resource_group_name,
@@ -2609,20 +4148,22 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("PrivateLinkResources", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @distributed_trace
     def get_private_link_resources(
         self, resource_group_name: str, resource_name: str, group_id: str, **kwargs: Any
-    ) -> _models.GroupIdInformation:
+    ) -> JSON:
         """Get the specified private link resource for the given provisioning service.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2632,9 +4173,36 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type resource_name: str
         :param group_id: The name of the private link resource. Required.
         :type group_id: str
-        :return: GroupIdInformation
-        :rtype: ~dps.mgmt.models.GroupIdInformation
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "properties": {
+                        "groupId": "str",
+                        "requiredMembers": [
+                            "str"
+                        ],
+                        "requiredZoneNames": [
+                            "str"
+                        ]
+                    },
+                    "id": "str",
+                    "name": "str",
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2647,7 +4215,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.GroupIdInformation] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_iot_dps_resource_get_private_link_resources_request(
             resource_group_name=resource_group_name,
@@ -2669,20 +4237,22 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("GroupIdInformation", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @distributed_trace
     def list_valid_skus(
         self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any
-    ) -> Iterable["_models.IotDpsSkuDefinition"]:
+    ) -> Iterable[JSON]:
         """Gets the list of valid SKUs and tiers for a provisioning service.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2690,14 +4260,22 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
         :type resource_group_name: str
         :param provisioning_service_name: Name of the provisioning service to retrieve. Required.
         :type provisioning_service_name: str
-        :return: An iterator like instance of IotDpsSkuDefinition
-        :rtype: ~azure.core.paging.ItemPaged[~dps.mgmt.models.IotDpsSkuDefinition]
+        :return: An iterator like instance of JSON object
+        :rtype: ~azure.core.paging.ItemPaged[JSON]
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "name": "str"
+                }
         """
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models._models.IotDpsSkuDefinitionListResult] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2738,13 +4316,11 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
             return _request
 
         def extract_data(pipeline_response):
-            deserialized = self._deserialize(
-                _models._models.IotDpsSkuDefinitionListResult, pipeline_response  # pylint: disable=protected-access
-            )
-            list_of_elem = deserialized.value
+            deserialized = pipeline_response.http_response.json()
+            list_of_elem = deserialized.get("value", [])
             if cls:
                 list_of_elem = cls(list_of_elem)  # type: ignore
-            return deserialized.next_link or None, iter(list_of_elem)
+            return deserialized.get("nextLink") or None, iter(list_of_elem)
 
         def get_next(next_link=None):
             _request = prepare_request(next_link)
@@ -2757,8 +4333,7 @@ class IotDpsResourceOperations:  # pylint: disable=too-many-public-methods
 
             if response.status_code not in [200]:
                 map_error(status_code=response.status_code, response=response, error_map=error_map)
-                error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-                raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+                raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
             return pipeline_response
 
@@ -2775,8 +4350,6 @@ class DpsCertificateOperations:
         :attr:`dps_certificate` attribute.
     """
 
-    models = _models
-
     def __init__(self, *args, **kwargs):
         input_args = list(args)
         self._client: PipelineClient = input_args.pop(0) if input_args else kwargs.pop("client")
@@ -2785,9 +4358,7 @@ class DpsCertificateOperations:
         self._deserialize: Deserializer = input_args.pop(0) if input_args else kwargs.pop("deserializer")
 
     @distributed_trace
-    def list(
-        self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any
-    ) -> _models.CertificateListDescription:
+    def list(self, resource_group_name: str, provisioning_service_name: str, **kwargs: Any) -> JSON:
         """Get all the certificates tied to the provisioning service.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2795,9 +4366,41 @@ class DpsCertificateOperations:
         :type resource_group_name: str
         :param provisioning_service_name: Name of the provisioning service to retrieve. Required.
         :type provisioning_service_name: str
-        :return: CertificateListDescription
-        :rtype: ~dps.mgmt.models.CertificateListDescription
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "value": [
+                        {
+                            "etag": "str",
+                            "id": "str",
+                            "name": "str",
+                            "properties": {
+                                "certificate": bytes("bytes", encoding="utf-8"),
+                                "created": "2020-02-20 00:00:00",
+                                "expiry": "2020-02-20 00:00:00",
+                                "isVerified": bool,
+                                "subject": "str",
+                                "thumbprint": "str",
+                                "updated": "2020-02-20 00:00:00"
+                            },
+                            "systemData": {
+                                "createdAt": "2020-02-20 00:00:00",
+                                "createdBy": "str",
+                                "createdByType": "str",
+                                "lastModifiedAt": "2020-02-20 00:00:00",
+                                "lastModifiedBy": "str",
+                                "lastModifiedByType": "str"
+                            },
+                            "type": "str"
+                        }
+                    ]
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2810,7 +4413,7 @@ class DpsCertificateOperations:
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.CertificateListDescription] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_dps_certificate_list_request(
             resource_group_name=resource_group_name,
@@ -2831,15 +4434,17 @@ class DpsCertificateOperations:
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("CertificateListDescription", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @distributed_trace
     def get(
@@ -2851,7 +4456,7 @@ class DpsCertificateOperations:
         etag: Optional[str] = None,
         match_condition: Optional[MatchConditions] = None,
         **kwargs: Any
-    ) -> _models.CertificateResponse:
+    ) -> JSON:
         """Get the certificate from the provisioning service.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2866,9 +4471,37 @@ class DpsCertificateOperations:
         :paramtype etag: str
         :keyword match_condition: The match condition to use upon the etag. Default value is None.
         :paramtype match_condition: ~azure.core.MatchConditions
-        :return: CertificateResponse
-        :rtype: ~dps.mgmt.models.CertificateResponse
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -2887,7 +4520,7 @@ class DpsCertificateOperations:
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.CertificateResponse] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_dps_certificate_get_request(
             resource_group_name=resource_group_name,
@@ -2911,15 +4544,17 @@ class DpsCertificateOperations:
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("CertificateResponse", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @overload
     def create_or_update(
@@ -2927,13 +4562,13 @@ class DpsCertificateOperations:
         resource_group_name: str,
         provisioning_service_name: str,
         certificate_name: str,
-        certificate_description: _models.CertificateResponse,
+        certificate_description: JSON,
         *,
         content_type: str = "application/json",
         etag: Optional[str] = None,
         match_condition: Optional[MatchConditions] = None,
         **kwargs: Any
-    ) -> _models.CertificateResponse:
+    ) -> JSON:
         """Add new certificate or update an existing certificate.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2944,7 +4579,7 @@ class DpsCertificateOperations:
         :param certificate_name: Name of the certificate to retrieve. Required.
         :type certificate_name: str
         :param certificate_description: The certificate body. Required.
-        :type certificate_description: ~dps.mgmt.models.CertificateResponse
+        :type certificate_description: JSON
         :keyword content_type: Body Parameter content-type. Content type parameter for JSON body.
          Default value is "application/json".
         :paramtype content_type: str
@@ -2953,9 +4588,62 @@ class DpsCertificateOperations:
         :paramtype etag: str
         :keyword match_condition: The match condition to use upon the etag. Default value is None.
         :paramtype match_condition: ~azure.core.MatchConditions
-        :return: CertificateResponse
-        :rtype: ~dps.mgmt.models.CertificateResponse
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                certificate_description = {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
+
+                # response body for status code(s): 200
+                response == {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @overload
@@ -2970,7 +4658,7 @@ class DpsCertificateOperations:
         etag: Optional[str] = None,
         match_condition: Optional[MatchConditions] = None,
         **kwargs: Any
-    ) -> _models.CertificateResponse:
+    ) -> JSON:
         """Add new certificate or update an existing certificate.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -2990,9 +4678,37 @@ class DpsCertificateOperations:
         :paramtype etag: str
         :keyword match_condition: The match condition to use upon the etag. Default value is None.
         :paramtype match_condition: ~azure.core.MatchConditions
-        :return: CertificateResponse
-        :rtype: ~dps.mgmt.models.CertificateResponse
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @distributed_trace
@@ -3001,12 +4717,12 @@ class DpsCertificateOperations:
         resource_group_name: str,
         provisioning_service_name: str,
         certificate_name: str,
-        certificate_description: Union[_models.CertificateResponse, IO[bytes]],
+        certificate_description: Union[JSON, IO[bytes]],
         *,
         etag: Optional[str] = None,
         match_condition: Optional[MatchConditions] = None,
         **kwargs: Any
-    ) -> _models.CertificateResponse:
+    ) -> JSON:
         """Add new certificate or update an existing certificate.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -3016,17 +4732,70 @@ class DpsCertificateOperations:
         :type provisioning_service_name: str
         :param certificate_name: Name of the certificate to retrieve. Required.
         :type certificate_name: str
-        :param certificate_description: The certificate body. Is either a CertificateResponse type or a
-         IO[bytes] type. Required.
-        :type certificate_description: ~dps.mgmt.models.CertificateResponse or IO[bytes]
+        :param certificate_description: The certificate body. Is either a JSON type or a IO[bytes]
+         type. Required.
+        :type certificate_description: JSON or IO[bytes]
         :keyword etag: check if resource is changed. Set None to skip checking etag. Default value is
          None.
         :paramtype etag: str
         :keyword match_condition: The match condition to use upon the etag. Default value is None.
         :paramtype match_condition: ~azure.core.MatchConditions
-        :return: CertificateResponse
-        :rtype: ~dps.mgmt.models.CertificateResponse
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                certificate_description = {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
+
+                # response body for status code(s): 200
+                response == {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -3046,7 +4815,7 @@ class DpsCertificateOperations:
         _params = kwargs.pop("params", {}) or {}
 
         content_type: Optional[str] = kwargs.pop("content_type", _headers.pop("Content-Type", None))
-        cls: ClsType[_models.CertificateResponse] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         content_type = content_type or "application/json"
         _json = None
@@ -3054,7 +4823,7 @@ class DpsCertificateOperations:
         if isinstance(certificate_description, (IOBase, bytes)):
             _content = certificate_description
         else:
-            _json = self._serialize.body(certificate_description, "CertificateResponse")
+            _json = certificate_description
 
         _request = build_dps_certificate_create_or_update_request(
             resource_group_name=resource_group_name,
@@ -3081,15 +4850,17 @@ class DpsCertificateOperations:
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("CertificateResponse", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @distributed_trace
     def delete(  # pylint: disable=inconsistent-return-statements
@@ -3103,7 +4874,7 @@ class DpsCertificateOperations:
         certificate_name1: Optional[str] = None,
         certificate_raw_bytes: Optional[bytes] = None,
         certificate_is_verified: Optional[bool] = None,
-        certificate_purpose: Optional[Union[str, _models.CertificatePurpose]] = None,
+        certificate_purpose: Optional[str] = None,
         certificate_created: Optional[datetime.datetime] = None,
         certificate_last_updated: Optional[datetime.datetime] = None,
         certificate_has_private_key: Optional[bool] = None,
@@ -3133,7 +4904,7 @@ class DpsCertificateOperations:
         :paramtype certificate_is_verified: bool
         :keyword certificate_purpose: A description that mentions the purpose of the certificate. Known
          values are: "clientAuthentication" and "serverAuthentication". Default value is None.
-        :paramtype certificate_purpose: str or ~dps.mgmt.models.CertificatePurpose
+        :paramtype certificate_purpose: str
         :keyword certificate_created: Time the certificate is created. Default value is None.
         :paramtype certificate_created: ~datetime.datetime
         :keyword certificate_last_updated: Certificate last updated time. Default value is None.
@@ -3197,8 +4968,7 @@ class DpsCertificateOperations:
 
         if response.status_code not in [200, 204]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
         if cls:
             return cls(pipeline_response, None, {})  # type: ignore
@@ -3215,13 +4985,13 @@ class DpsCertificateOperations:
         certificate_name1: Optional[str] = None,
         certificate_raw_bytes: Optional[bytes] = None,
         certificate_is_verified: Optional[bool] = None,
-        certificate_purpose: Optional[Union[str, _models.CertificatePurpose]] = None,
+        certificate_purpose: Optional[str] = None,
         certificate_created: Optional[datetime.datetime] = None,
         certificate_last_updated: Optional[datetime.datetime] = None,
         certificate_has_private_key: Optional[bool] = None,
         certificate_nonce: Optional[str] = None,
         **kwargs: Any
-    ) -> _models.VerificationCodeResponse:
+    ) -> JSON:
         """Generate verification code for Proof of Possession.
 
         :param resource_group_name: The name of the resource group. The name is case insensitive.
@@ -3244,7 +5014,7 @@ class DpsCertificateOperations:
         :paramtype certificate_is_verified: bool
         :keyword certificate_purpose: Description mentioning the purpose of the certificate. Known
          values are: "clientAuthentication" and "serverAuthentication". Default value is None.
-        :paramtype certificate_purpose: str or ~dps.mgmt.models.CertificatePurpose
+        :paramtype certificate_purpose: str
         :keyword certificate_created: Time the certificate is created. Default value is None.
         :paramtype certificate_created: ~datetime.datetime
         :keyword certificate_last_updated: Certificate last updated time. Default value is None.
@@ -3255,9 +5025,30 @@ class DpsCertificateOperations:
         :keyword certificate_nonce: Random number generated to indicate Proof of Possession. Default
          value is None.
         :paramtype certificate_nonce: str
-        :return: VerificationCodeResponse
-        :rtype: ~dps.mgmt.models.VerificationCodeResponse
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "str",
+                        "expiry": "str",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "str",
+                        "verificationCode": "str"
+                    },
+                    "type": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -3276,7 +5067,7 @@ class DpsCertificateOperations:
         _headers = kwargs.pop("headers", {}) or {}
         _params = kwargs.pop("params", {}) or {}
 
-        cls: ClsType[_models.VerificationCodeResponse] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         _request = build_dps_certificate_generate_verification_code_request(
             resource_group_name=resource_group_name,
@@ -3308,15 +5099,17 @@ class DpsCertificateOperations:
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("VerificationCodeResponse", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
 
     @overload
     def verify_certificate(
@@ -3324,21 +5117,21 @@ class DpsCertificateOperations:
         resource_group_name: str,
         provisioning_service_name: str,
         certificate_name: str,
-        request: _models.VerificationCodeRequest,
+        request: JSON,
         *,
         etag: str,
         match_condition: MatchConditions,
         certificate_name1: Optional[str] = None,
         certificate_raw_bytes: Optional[bytes] = None,
         certificate_is_verified: Optional[bool] = None,
-        certificate_purpose: Optional[Union[str, _models.CertificatePurpose]] = None,
+        certificate_purpose: Optional[str] = None,
         certificate_created: Optional[datetime.datetime] = None,
         certificate_last_updated: Optional[datetime.datetime] = None,
         certificate_has_private_key: Optional[bool] = None,
         certificate_nonce: Optional[str] = None,
         content_type: str = "application/json",
         **kwargs: Any
-    ) -> _models.CertificateResponse:
+    ) -> JSON:
         """Verifies the certificate's private key possession by providing the leaf cert issued by the
         verifying pre uploaded certificate.
 
@@ -3350,7 +5143,7 @@ class DpsCertificateOperations:
         :param certificate_name: Name of the certificate to retrieve. Required.
         :type certificate_name: str
         :param request: The name of the certificate. Required.
-        :type request: ~dps.mgmt.models.VerificationCodeRequest
+        :type request: JSON
         :keyword etag: check if resource is changed. Set None to skip checking etag. Required.
         :paramtype etag: str
         :keyword match_condition: The match condition to use upon the etag. Required.
@@ -3364,7 +5157,7 @@ class DpsCertificateOperations:
         :paramtype certificate_is_verified: bool
         :keyword certificate_purpose: Describe the purpose of the certificate. Known values are:
          "clientAuthentication" and "serverAuthentication". Default value is None.
-        :paramtype certificate_purpose: str or ~dps.mgmt.models.CertificatePurpose
+        :paramtype certificate_purpose: str
         :keyword certificate_created: Time the certificate is created. Default value is None.
         :paramtype certificate_created: ~datetime.datetime
         :keyword certificate_last_updated: Certificate last updated time. Default value is None.
@@ -3378,9 +5171,42 @@ class DpsCertificateOperations:
         :keyword content_type: Body Parameter content-type. Content type parameter for JSON body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: CertificateResponse
-        :rtype: ~dps.mgmt.models.CertificateResponse
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                request = {
+                    "certificate": "str"
+                }
+
+                # response body for status code(s): 200
+                response == {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @overload
@@ -3396,14 +5222,14 @@ class DpsCertificateOperations:
         certificate_name1: Optional[str] = None,
         certificate_raw_bytes: Optional[bytes] = None,
         certificate_is_verified: Optional[bool] = None,
-        certificate_purpose: Optional[Union[str, _models.CertificatePurpose]] = None,
+        certificate_purpose: Optional[str] = None,
         certificate_created: Optional[datetime.datetime] = None,
         certificate_last_updated: Optional[datetime.datetime] = None,
         certificate_has_private_key: Optional[bool] = None,
         certificate_nonce: Optional[str] = None,
         content_type: str = "application/json",
         **kwargs: Any
-    ) -> _models.CertificateResponse:
+    ) -> JSON:
         """Verifies the certificate's private key possession by providing the leaf cert issued by the
         verifying pre uploaded certificate.
 
@@ -3429,7 +5255,7 @@ class DpsCertificateOperations:
         :paramtype certificate_is_verified: bool
         :keyword certificate_purpose: Describe the purpose of the certificate. Known values are:
          "clientAuthentication" and "serverAuthentication". Default value is None.
-        :paramtype certificate_purpose: str or ~dps.mgmt.models.CertificatePurpose
+        :paramtype certificate_purpose: str
         :keyword certificate_created: Time the certificate is created. Default value is None.
         :paramtype certificate_created: ~datetime.datetime
         :keyword certificate_last_updated: Certificate last updated time. Default value is None.
@@ -3443,9 +5269,37 @@ class DpsCertificateOperations:
         :keyword content_type: Body Parameter content-type. Content type parameter for binary body.
          Default value is "application/json".
         :paramtype content_type: str
-        :return: CertificateResponse
-        :rtype: ~dps.mgmt.models.CertificateResponse
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # response body for status code(s): 200
+                response == {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
 
     @distributed_trace
@@ -3454,20 +5308,20 @@ class DpsCertificateOperations:
         resource_group_name: str,
         provisioning_service_name: str,
         certificate_name: str,
-        request: Union[_models.VerificationCodeRequest, IO[bytes]],
+        request: Union[JSON, IO[bytes]],
         *,
         etag: str,
         match_condition: MatchConditions,
         certificate_name1: Optional[str] = None,
         certificate_raw_bytes: Optional[bytes] = None,
         certificate_is_verified: Optional[bool] = None,
-        certificate_purpose: Optional[Union[str, _models.CertificatePurpose]] = None,
+        certificate_purpose: Optional[str] = None,
         certificate_created: Optional[datetime.datetime] = None,
         certificate_last_updated: Optional[datetime.datetime] = None,
         certificate_has_private_key: Optional[bool] = None,
         certificate_nonce: Optional[str] = None,
         **kwargs: Any
-    ) -> _models.CertificateResponse:
+    ) -> JSON:
         """Verifies the certificate's private key possession by providing the leaf cert issued by the
         verifying pre uploaded certificate.
 
@@ -3478,9 +5332,9 @@ class DpsCertificateOperations:
         :type provisioning_service_name: str
         :param certificate_name: Name of the certificate to retrieve. Required.
         :type certificate_name: str
-        :param request: The name of the certificate. Is either a VerificationCodeRequest type or a
-         IO[bytes] type. Required.
-        :type request: ~dps.mgmt.models.VerificationCodeRequest or IO[bytes]
+        :param request: The name of the certificate. Is either a JSON type or a IO[bytes] type.
+         Required.
+        :type request: JSON or IO[bytes]
         :keyword etag: check if resource is changed. Set None to skip checking etag. Required.
         :paramtype etag: str
         :keyword match_condition: The match condition to use upon the etag. Required.
@@ -3494,7 +5348,7 @@ class DpsCertificateOperations:
         :paramtype certificate_is_verified: bool
         :keyword certificate_purpose: Describe the purpose of the certificate. Known values are:
          "clientAuthentication" and "serverAuthentication". Default value is None.
-        :paramtype certificate_purpose: str or ~dps.mgmt.models.CertificatePurpose
+        :paramtype certificate_purpose: str
         :keyword certificate_created: Time the certificate is created. Default value is None.
         :paramtype certificate_created: ~datetime.datetime
         :keyword certificate_last_updated: Certificate last updated time. Default value is None.
@@ -3505,9 +5359,42 @@ class DpsCertificateOperations:
         :keyword certificate_nonce: Random number generated to indicate Proof of Possession. Default
          value is None.
         :paramtype certificate_nonce: str
-        :return: CertificateResponse
-        :rtype: ~dps.mgmt.models.CertificateResponse
+        :return: JSON object
+        :rtype: JSON
         :raises ~azure.core.exceptions.HttpResponseError:
+
+        Example:
+            .. code-block:: python
+
+                # JSON input template you can fill out and use as your body input.
+                request = {
+                    "certificate": "str"
+                }
+
+                # response body for status code(s): 200
+                response == {
+                    "etag": "str",
+                    "id": "str",
+                    "name": "str",
+                    "properties": {
+                        "certificate": bytes("bytes", encoding="utf-8"),
+                        "created": "2020-02-20 00:00:00",
+                        "expiry": "2020-02-20 00:00:00",
+                        "isVerified": bool,
+                        "subject": "str",
+                        "thumbprint": "str",
+                        "updated": "2020-02-20 00:00:00"
+                    },
+                    "systemData": {
+                        "createdAt": "2020-02-20 00:00:00",
+                        "createdBy": "str",
+                        "createdByType": "str",
+                        "lastModifiedAt": "2020-02-20 00:00:00",
+                        "lastModifiedBy": "str",
+                        "lastModifiedByType": "str"
+                    },
+                    "type": "str"
+                }
         """
         error_map: MutableMapping = {
             401: ClientAuthenticationError,
@@ -3527,7 +5414,7 @@ class DpsCertificateOperations:
         _params = kwargs.pop("params", {}) or {}
 
         content_type: Optional[str] = kwargs.pop("content_type", _headers.pop("Content-Type", None))
-        cls: ClsType[_models.CertificateResponse] = kwargs.pop("cls", None)
+        cls: ClsType[JSON] = kwargs.pop("cls", None)
 
         content_type = content_type or "application/json"
         _json = None
@@ -3535,7 +5422,7 @@ class DpsCertificateOperations:
         if isinstance(request, (IOBase, bytes)):
             _content = request
         else:
-            _json = self._serialize.body(request, "VerificationCodeRequest")
+            _json = request
 
         _request = build_dps_certificate_verify_certificate_request(
             resource_group_name=resource_group_name,
@@ -3570,12 +5457,14 @@ class DpsCertificateOperations:
 
         if response.status_code not in [200]:
             map_error(status_code=response.status_code, response=response, error_map=error_map)
-            error = self._deserialize.failsafe_deserialize(_models.ErrorDetails, pipeline_response)
-            raise HttpResponseError(response=response, model=error, error_format=ARMErrorFormat)
+            raise HttpResponseError(response=response, error_format=ARMErrorFormat)
 
-        deserialized = self._deserialize("CertificateResponse", pipeline_response.http_response)
+        if response.content:
+            deserialized = response.json()
+        else:
+            deserialized = None
 
         if cls:
-            return cls(pipeline_response, deserialized, {})  # type: ignore
+            return cls(pipeline_response, cast(JSON, deserialized), {})  # type: ignore
 
-        return deserialized  # type: ignore
+        return cast(JSON, deserialized)  # type: ignore
