@@ -1,5 +1,5 @@
+# pylint: disable=line-too-long,useless-suppression,too-many-lines
 # coding=utf-8
-# pylint: disable=too-many-lines
 # --------------------------------------------------------------------------
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 from .. import _serialization
 
 if TYPE_CHECKING:
-    # pylint: disable=unused-import,ungrouped-imports
     from .. import models as _models
 
 
@@ -73,7 +72,7 @@ class CertificateProperties(_serialization.Model):
     :ivar subject: The certificate's subject name.
     :vartype subject: str
     :ivar expiry: The certificate's expiration date and time.
-    :vartype expiry: str
+    :vartype expiry: ~datetime.datetime
     :ivar thumbprint: The certificate's thumbprint.
     :vartype thumbprint: str
     :ivar is_verified: Determines whether certificate has been verified.
@@ -82,9 +81,9 @@ class CertificateProperties(_serialization.Model):
      content.
     :vartype certificate: bytes
     :ivar created: The certificate's creation date and time.
-    :vartype created: str
+    :vartype created: ~datetime.datetime
     :ivar updated: The certificate's last update date and time.
-    :vartype updated: str
+    :vartype updated: ~datetime.datetime
     """
 
     _validation = {
@@ -97,12 +96,12 @@ class CertificateProperties(_serialization.Model):
 
     _attribute_map = {
         "subject": {"key": "subject", "type": "str"},
-        "expiry": {"key": "expiry", "type": "str"},
+        "expiry": {"key": "expiry", "type": "rfc-1123"},
         "thumbprint": {"key": "thumbprint", "type": "str"},
         "is_verified": {"key": "isVerified", "type": "bool"},
         "certificate": {"key": "certificate", "type": "bytearray"},
-        "created": {"key": "created", "type": "str"},
-        "updated": {"key": "updated", "type": "str"},
+        "created": {"key": "created", "type": "rfc-1123"},
+        "updated": {"key": "updated", "type": "rfc-1123"},
     }
 
     def __init__(
@@ -116,13 +115,13 @@ class CertificateProperties(_serialization.Model):
         :paramtype certificate: bytes
         """
         super().__init__(**kwargs)
-        self.subject = None
-        self.expiry = None
-        self.thumbprint = None
+        self.subject: Optional[str] = None
+        self.expiry: Optional[datetime.datetime] = None
+        self.thumbprint: Optional[str] = None
         self.is_verified = is_verified
         self.certificate = certificate
-        self.created = None
-        self.updated = None
+        self.created: Optional[datetime.datetime] = None
+        self.updated: Optional[datetime.datetime] = None
 
 
 class Resource(_serialization.Model):
@@ -131,7 +130,7 @@ class Resource(_serialization.Model):
     Variables are only populated by the server, and will be ignored when sending a request.
 
     :ivar id: Fully qualified resource ID for the resource. Ex -
-     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.  # pylint: disable=line-too-long
+     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.
     :vartype id: str
     :ivar name: The name of the resource.
     :vartype name: str
@@ -160,10 +159,10 @@ class Resource(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.id = None
-        self.name = None
-        self.type = None
-        self.system_data = None
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.type: Optional[str] = None
+        self.system_data: Optional["_models.SystemData"] = None
 
 
 class ProxyResource(Resource):
@@ -173,7 +172,7 @@ class ProxyResource(Resource):
     Variables are only populated by the server, and will be ignored when sending a request.
 
     :ivar id: Fully qualified resource ID for the resource. Ex -
-     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.  # pylint: disable=line-too-long
+     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.
     :vartype id: str
     :ivar name: The name of the resource.
     :vartype name: str
@@ -192,7 +191,7 @@ class CertificateResponse(ProxyResource):
     Variables are only populated by the server, and will be ignored when sending a request.
 
     :ivar id: Fully qualified resource ID for the resource. Ex -
-     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.  # pylint: disable=line-too-long
+     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.
     :vartype id: str
     :ivar name: The name of the resource.
     :vartype name: str
@@ -232,7 +231,7 @@ class CertificateResponse(ProxyResource):
         """
         super().__init__(**kwargs)
         self.properties = properties
-        self.etag = None
+        self.etag: Optional[str] = None
 
 
 class DeviceRegistryNamespaceDescription(_serialization.Model):
@@ -312,8 +311,8 @@ class ErrorAdditionalInfo(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.type = None
-        self.info = None
+        self.type: Optional[str] = None
+        self.info: Optional[JSON] = None
 
 
 class ErrorDetail(_serialization.Model):
@@ -352,11 +351,11 @@ class ErrorDetail(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.code = None
-        self.message = None
-        self.target = None
-        self.details = None
-        self.additional_info = None
+        self.code: Optional[str] = None
+        self.message: Optional[str] = None
+        self.target: Optional[str] = None
+        self.details: Optional[List["_models.ErrorDetail"]] = None
+        self.additional_info: Optional[List["_models.ErrorAdditionalInfo"]] = None
 
 
 class ErrorDetails(_serialization.Model):
@@ -391,10 +390,10 @@ class ErrorDetails(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.code = None
-        self.http_status_code = None
-        self.message = None
-        self.details = None
+        self.code: Optional[int] = None
+        self.http_status_code: Optional[str] = None
+        self.message: Optional[str] = None
+        self.details: Optional[str] = None
 
 
 class ErrorMessage(_serialization.Model):
@@ -460,7 +459,7 @@ class GroupIdInformation(ProxyResource):
     All required parameters must be populated in order to send to server.
 
     :ivar id: Fully qualified resource ID for the resource. Ex -
-     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.  # pylint: disable=line-too-long
+     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.
     :vartype id: str
     :ivar name: The name of the resource.
     :vartype name: str
@@ -538,7 +537,7 @@ class GroupIdInformationProperties(_serialization.Model):
         self.required_zone_names = required_zone_names
 
 
-class IotDpsPropertiesDescription(_serialization.Model):  # pylint: disable=too-many-instance-attributes
+class IotDpsPropertiesDescription(_serialization.Model):
     """the service specific properties of a provisioning service, including keys, linked iot hubs,
     current state, and system generated properties such as hostname and idScope.
 
@@ -669,9 +668,9 @@ class IotDpsPropertiesDescription(_serialization.Model):  # pylint: disable=too-
         self.iot_hubs = iot_hubs
         self.device_registry_namespace = device_registry_namespace
         self.allocation_policy = allocation_policy
-        self.service_operations_host_name = None
-        self.device_provisioning_host_name = None
-        self.id_scope = None
+        self.service_operations_host_name: Optional[str] = None
+        self.device_provisioning_host_name: Optional[str] = None
+        self.id_scope: Optional[str] = None
         self.authorization_policies = authorization_policies
         self.enable_data_residency = enable_data_residency
         self.portal_operations_host_name = portal_operations_host_name
@@ -765,7 +764,7 @@ class IotDpsSkuInfo(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.name = name
-        self.tier = None
+        self.tier: Optional[str] = None
         self.capacity = capacity
 
 
@@ -782,7 +781,17 @@ class IotHubDefinitionDescription(_serialization.Model):
     :vartype allocation_weight: int
     :ivar name: Host name of the IoT hub.
     :vartype name: str
-    :ivar connection_string: Connection string of the IoT hub. Required.
+    :ivar host_name: Host name of the IoT hub. This is required when connectionString is not
+     provided.
+    :vartype host_name: str
+    :ivar authentication_type: IotHub MI authentication type: KeyBased, UserAssigned,
+     SystemAssigned. Known values are: "KeyBased", "UserAssigned", and "SystemAssigned".
+    :vartype authentication_type: str or ~dps.mgmt.models.IotHubAuthenticationType
+    :ivar selected_user_assigned_identity_resource_id: The selected user-assigned identity resource
+     Id associated with IoT hub. This is required when authenticationType is UserAssigned.
+    :vartype selected_user_assigned_identity_resource_id: str
+    :ivar connection_string: Connection string of the IoT hub. This is required when
+     authenticationType is KeyBased.
     :vartype connection_string: str
     :ivar location: ARM region of the IoT hub. Required.
     :vartype location: str
@@ -790,7 +799,6 @@ class IotHubDefinitionDescription(_serialization.Model):
 
     _validation = {
         "name": {"readonly": True},
-        "connection_string": {"required": True},
         "location": {"required": True},
     }
 
@@ -798,6 +806,9 @@ class IotHubDefinitionDescription(_serialization.Model):
         "apply_allocation_policy": {"key": "applyAllocationPolicy", "type": "bool"},
         "allocation_weight": {"key": "allocationWeight", "type": "int"},
         "name": {"key": "name", "type": "str"},
+        "host_name": {"key": "hostName", "type": "str"},
+        "authentication_type": {"key": "authenticationType", "type": "str"},
+        "selected_user_assigned_identity_resource_id": {"key": "selectedUserAssignedIdentityResourceId", "type": "str"},
         "connection_string": {"key": "connectionString", "type": "str"},
         "location": {"key": "location", "type": "str"},
     }
@@ -805,10 +816,13 @@ class IotHubDefinitionDescription(_serialization.Model):
     def __init__(
         self,
         *,
-        connection_string: str,
         location: str,
         apply_allocation_policy: Optional[bool] = None,
         allocation_weight: Optional[int] = None,
+        host_name: Optional[str] = None,
+        authentication_type: Optional[Union[str, "_models.IotHubAuthenticationType"]] = None,
+        selected_user_assigned_identity_resource_id: Optional[str] = None,
+        connection_string: Optional[str] = None,
         **kwargs: Any
     ) -> None:
         """
@@ -817,7 +831,17 @@ class IotHubDefinitionDescription(_serialization.Model):
         :paramtype apply_allocation_policy: bool
         :keyword allocation_weight: weight to apply for a given iot h.
         :paramtype allocation_weight: int
-        :keyword connection_string: Connection string of the IoT hub. Required.
+        :keyword host_name: Host name of the IoT hub. This is required when connectionString is not
+         provided.
+        :paramtype host_name: str
+        :keyword authentication_type: IotHub MI authentication type: KeyBased, UserAssigned,
+         SystemAssigned. Known values are: "KeyBased", "UserAssigned", and "SystemAssigned".
+        :paramtype authentication_type: str or ~dps.mgmt.models.IotHubAuthenticationType
+        :keyword selected_user_assigned_identity_resource_id: The selected user-assigned identity
+         resource Id associated with IoT hub. This is required when authenticationType is UserAssigned.
+        :paramtype selected_user_assigned_identity_resource_id: str
+        :keyword connection_string: Connection string of the IoT hub. This is required when
+         authenticationType is KeyBased.
         :paramtype connection_string: str
         :keyword location: ARM region of the IoT hub. Required.
         :paramtype location: str
@@ -825,7 +849,10 @@ class IotHubDefinitionDescription(_serialization.Model):
         super().__init__(**kwargs)
         self.apply_allocation_policy = apply_allocation_policy
         self.allocation_weight = allocation_weight
-        self.name = None
+        self.name: Optional[str] = None
+        self.host_name = host_name
+        self.authentication_type = authentication_type
+        self.selected_user_assigned_identity_resource_id = selected_user_assigned_identity_resource_id
         self.connection_string = connection_string
         self.location = location
 
@@ -909,7 +936,7 @@ class ManagedServiceIdentity(_serialization.Model):
     :vartype type: str or ~dps.mgmt.models.ManagedServiceIdentityType
     :ivar user_assigned_identities: The set of user assigned identities associated with the
      resource. The userAssignedIdentities dictionary keys will be ARM resource ids in the form:
-     '/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}.  # pylint: disable=line-too-long
+     '/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}.
      The dictionary values can be empty objects ({}) in requests.
     :vartype user_assigned_identities: dict[str, ~dps.mgmt.models.UserAssignedIdentity]
     """
@@ -941,13 +968,13 @@ class ManagedServiceIdentity(_serialization.Model):
         :paramtype type: str or ~dps.mgmt.models.ManagedServiceIdentityType
         :keyword user_assigned_identities: The set of user assigned identities associated with the
          resource. The userAssignedIdentities dictionary keys will be ARM resource ids in the form:
-         '/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}.  # pylint: disable=line-too-long
+         '/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identityName}.
          The dictionary values can be empty objects ({}) in requests.
         :paramtype user_assigned_identities: dict[str, ~dps.mgmt.models.UserAssignedIdentity]
         """
         super().__init__(**kwargs)
-        self.principal_id = None
-        self.tenant_id = None
+        self.principal_id: Optional[str] = None
+        self.tenant_id: Optional[str] = None
         self.type = type
         self.user_assigned_identities = user_assigned_identities
 
@@ -1019,7 +1046,7 @@ class Operation(_serialization.Model):
         :paramtype display: ~dps.mgmt.models.OperationDisplay
         """
         super().__init__(**kwargs)
-        self.name = None
+        self.name: Optional[str] = None
         self.display = display
 
 
@@ -1051,9 +1078,9 @@ class OperationDisplay(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.provider = None
-        self.resource = None
-        self.operation = None
+        self.provider: Optional[str] = None
+        self.resource: Optional[str] = None
+        self.operation: Optional[str] = None
 
 
 class OperationInputs(_serialization.Model):
@@ -1110,7 +1137,7 @@ class OperationListResult(_serialization.Model):
         :paramtype next_link: str
         """
         super().__init__(**kwargs)
-        self.value = None
+        self.value: Optional[List["_models.Operation"]] = None
         self.next_link = next_link
 
 
@@ -1134,7 +1161,7 @@ class PrivateEndpoint(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.id = None
+        self.id: Optional[str] = None
 
 
 class PrivateEndpointConnection(ProxyResource):
@@ -1145,7 +1172,7 @@ class PrivateEndpointConnection(ProxyResource):
     All required parameters must be populated in order to send to server.
 
     :ivar id: Fully qualified resource ID for the resource. Ex -
-     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.  # pylint: disable=line-too-long
+     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.
     :vartype id: str
     :ivar name: The name of the resource.
     :vartype name: str
@@ -1308,7 +1335,7 @@ class TrackedResource(Resource):
     All required parameters must be populated in order to send to server.
 
     :ivar id: Fully qualified resource ID for the resource. Ex -
-     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.  # pylint: disable=line-too-long
+     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.
     :vartype id: str
     :ivar name: The name of the resource.
     :vartype name: str
@@ -1353,7 +1380,7 @@ class TrackedResource(Resource):
         self.location = location
 
 
-class ProvisioningServiceDescription(TrackedResource):  # pylint: disable=too-many-instance-attributes
+class ProvisioningServiceDescription(TrackedResource):
     """The description of the provisioning service.
 
     Variables are only populated by the server, and will be ignored when sending a request.
@@ -1361,7 +1388,7 @@ class ProvisioningServiceDescription(TrackedResource):  # pylint: disable=too-ma
     All required parameters must be populated in order to send to server.
 
     :ivar id: Fully qualified resource ID for the resource. Ex -
-     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.  # pylint: disable=line-too-long
+     /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}.
     :vartype id: str
     :ivar name: The name of the resource.
     :vartype name: str
@@ -1700,8 +1727,8 @@ class UserAssignedIdentity(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.principal_id = None
-        self.client_id = None
+        self.principal_id: Optional[str] = None
+        self.client_id: Optional[str] = None
 
 
 class VerificationCodeRequest(_serialization.Model):
@@ -1766,10 +1793,10 @@ class VerificationCodeResponse(_serialization.Model):
         :paramtype properties: ~dps.mgmt.models.VerificationCodeResponseProperties
         """
         super().__init__(**kwargs)
-        self.name = None
-        self.etag = None
-        self.id = None
-        self.type = None
+        self.name: Optional[str] = None
+        self.etag: Optional[str] = None
+        self.id: Optional[str] = None
+        self.type: Optional[str] = None
         self.properties = properties
 
 

@@ -1,5 +1,5 @@
+# pylint: disable=line-too-long,useless-suppression,too-many-lines
 # coding=utf-8
-# pylint: disable=too-many-lines
 # --------------------------------------------------------------------------
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
@@ -7,21 +7,15 @@
 # Changes may cause incorrect behavior and will be lost if the code is regenerated.
 # --------------------------------------------------------------------------
 
+from collections.abc import MutableMapping
 import datetime
-import sys
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 from .. import _serialization
 
-if sys.version_info >= (3, 9):
-    from collections.abc import MutableMapping
-else:
-    from typing import MutableMapping  # type: ignore  # pylint: disable=ungrouped-imports
-
 if TYPE_CHECKING:
-    # pylint: disable=unused-import,ungrouped-imports
     from .. import models as _models
-JSON = MutableMapping[str, Any]  # pylint: disable=unsubscriptable-object
+JSON = MutableMapping[str, Any]
 
 
 class ArmIdentity(_serialization.Model):
@@ -71,8 +65,8 @@ class ArmIdentity(_serialization.Model):
         :paramtype user_assigned_identities: dict[str, ~iothub.mgmt.models.ArmUserIdentity]
         """
         super().__init__(**kwargs)
-        self.principal_id = None
-        self.tenant_id = None
+        self.principal_id: Optional[str] = None
+        self.tenant_id: Optional[str] = None
         self.type = type
         self.user_assigned_identities = user_assigned_identities
 
@@ -101,8 +95,8 @@ class ArmUserIdentity(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.principal_id = None
-        self.client_id = None
+        self.principal_id: Optional[str] = None
+        self.client_id: Optional[str] = None
 
 
 class CertificateBodyDescription(_serialization.Model):
@@ -174,10 +168,10 @@ class CertificateDescription(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.properties = properties
-        self.id = None
-        self.name = None
-        self.etag = None
-        self.type = None
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.etag: Optional[str] = None
+        self.type: Optional[str] = None
 
 
 class CertificateListDescription(_serialization.Model):
@@ -259,12 +253,12 @@ class CertificateProperties(_serialization.Model):
         :paramtype policy_resource_id: str
         """
         super().__init__(**kwargs)
-        self.subject = None
-        self.expiry = None
-        self.thumbprint = None
+        self.subject: Optional[str] = None
+        self.expiry: Optional[datetime.datetime] = None
+        self.thumbprint: Optional[str] = None
         self.is_verified = is_verified
-        self.created = None
-        self.updated = None
+        self.created: Optional[datetime.datetime] = None
+        self.updated: Optional[datetime.datetime] = None
         self.certificate = certificate
         self.policy_resource_id = policy_resource_id
 
@@ -325,14 +319,14 @@ class CertificatePropertiesWithNonce(_serialization.Model):
         :paramtype policy_resource_id: str
         """
         super().__init__(**kwargs)
-        self.subject = None
-        self.expiry = None
-        self.thumbprint = None
-        self.is_verified = None
-        self.created = None
-        self.updated = None
-        self.verification_code = None
-        self.certificate = None
+        self.subject: Optional[str] = None
+        self.expiry: Optional[datetime.datetime] = None
+        self.thumbprint: Optional[str] = None
+        self.is_verified: Optional[bool] = None
+        self.created: Optional[datetime.datetime] = None
+        self.updated: Optional[datetime.datetime] = None
+        self.verification_code: Optional[str] = None
+        self.certificate: Optional[str] = None
         self.policy_resource_id = policy_resource_id
 
 
@@ -399,10 +393,10 @@ class CertificateWithNonceDescription(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.properties = properties
-        self.id = None
-        self.name = None
-        self.etag = None
-        self.type = None
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.etag: Optional[str] = None
+        self.type: Optional[str] = None
 
 
 class CloudToDeviceProperties(_serialization.Model):
@@ -627,7 +621,7 @@ class EndpointHealthDataListResult(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.value = value
-        self.next_link = None
+        self.next_link: Optional[str] = None
 
 
 class EnrichmentProperties(_serialization.Model):
@@ -704,10 +698,10 @@ class ErrorDetails(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.code = None
-        self.http_status_code = None
-        self.message = None
-        self.details = None
+        self.code: Optional[str] = None
+        self.http_status_code: Optional[str] = None
+        self.message: Optional[str] = None
+        self.details: Optional[str] = None
 
 
 class EventHubConsumerGroupBodyDescription(_serialization.Model):
@@ -775,10 +769,10 @@ class EventHubConsumerGroupInfo(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.properties = properties
-        self.id = None
-        self.name = None
-        self.type = None
-        self.etag = None
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.type: Optional[str] = None
+        self.etag: Optional[str] = None
 
 
 class EventHubConsumerGroupName(_serialization.Model):
@@ -834,7 +828,7 @@ class EventHubConsumerGroupsListResult(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.value = value
-        self.next_link = None
+        self.next_link: Optional[str] = None
 
 
 class EventHubProperties(_serialization.Model):
@@ -886,9 +880,9 @@ class EventHubProperties(_serialization.Model):
         super().__init__(**kwargs)
         self.retention_time_in_days = retention_time_in_days
         self.partition_count = partition_count
-        self.partition_ids = None
-        self.path = None
-        self.endpoint = None
+        self.partition_ids: Optional[List[str]] = None
+        self.path: Optional[str] = None
+        self.endpoint: Optional[str] = None
 
 
 class ExportDevicesRequest(_serialization.Model):
@@ -1167,9 +1161,9 @@ class GroupIdInformation(_serialization.Model):
         :paramtype properties: ~iothub.mgmt.models.GroupIdInformationProperties
         """
         super().__init__(**kwargs)
-        self.id = None
-        self.name = None
-        self.type = None
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.type: Optional[str] = None
         self.properties = properties
 
 
@@ -1333,10 +1327,10 @@ class IotHubCapacity(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.minimum = None
-        self.maximum = None
-        self.default = None
-        self.scale_type = None
+        self.minimum: Optional[int] = None
+        self.maximum: Optional[int] = None
+        self.default: Optional[int] = None
+        self.scale_type: Optional[Union[str, "_models.IotHubScaleType"]] = None
 
 
 class Resource(_serialization.Model):
@@ -1381,9 +1375,9 @@ class Resource(_serialization.Model):
         :paramtype tags: dict[str, str]
         """
         super().__init__(**kwargs)
-        self.id = None
-        self.name = None
-        self.type = None
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.type: Optional[str] = None
         self.location = location
         self.tags = tags
 
@@ -1471,7 +1465,7 @@ class IotHubDescription(Resource):
         self.properties = properties
         self.sku = sku
         self.identity = identity
-        self.system_data = None
+        self.system_data: Optional["_models.SystemData"] = None
 
 
 class IotHubDescriptionListResult(_serialization.Model):
@@ -1501,7 +1495,30 @@ class IotHubDescriptionListResult(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.value = value
-        self.next_link = None
+        self.next_link: Optional[str] = None
+
+
+class IotHubDetails(_serialization.Model):
+    """Set of additional read-only properties for the IoT hub.
+
+    Variables are only populated by the server, and will be ignored when sending a request.
+
+    :ivar gateway_version: The IoT hub Gateway version. Known values are: "V1" and "V2".
+    :vartype gateway_version: str or ~iothub.mgmt.models.GatewayVersion
+    """
+
+    _validation = {
+        "gateway_version": {"readonly": True},
+    }
+
+    _attribute_map = {
+        "gateway_version": {"key": "gatewayVersion", "type": "str"},
+    }
+
+    def __init__(self, **kwargs: Any) -> None:
+        """ """
+        super().__init__(**kwargs)
+        self.gateway_version: Optional[Union[str, "_models.GatewayVersion"]] = None
 
 
 class IotHubLocationDescription(_serialization.Model):
@@ -1572,12 +1589,12 @@ class IotHubNameAvailabilityInfo(_serialization.Model):
         :paramtype message: str
         """
         super().__init__(**kwargs)
-        self.name_available = None
-        self.reason = None
+        self.name_available: Optional[bool] = None
+        self.reason: Optional[Union[str, "_models.IotHubNameUnavailabilityReason"]] = None
         self.message = message
 
 
-class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instance-attributes
+class IotHubProperties(_serialization.Model):
     """The properties of an IoT hub.
 
     Variables are only populated by the server, and will be ignored when sending a request.
@@ -1619,6 +1636,11 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
     :vartype state: str
     :ivar host_name: The name of the host.
     :vartype host_name: str
+    :ivar device_host_name: The name of the device host. Supports secure connections over TLS 1.3.
+    :vartype device_host_name: str
+    :ivar service_host_name: The name of the service host. Supports secure connections over TLS
+     1.3.
+    :vartype service_host_name: str
     :ivar event_hub_endpoints: The Event Hub-compatible endpoint properties. The only possible keys
      to this dictionary is events. This key has to be present in the dictionary while making create
      or update calls for the IoT hub.
@@ -1660,13 +1682,18 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
     :vartype ip_version: str or ~iothub.mgmt.models.IpVersion
     :ivar device_registry: Represents properties related to the Azure Device Registry (ADR).
     :vartype device_registry: ~iothub.mgmt.models.DeviceRegistry
+    :ivar iot_hub_details: Set of additional read-only properties for the IoT hub.
+    :vartype iot_hub_details: ~iothub.mgmt.models.IotHubDetails
     """
 
     _validation = {
         "provisioning_state": {"readonly": True},
         "state": {"readonly": True},
         "host_name": {"readonly": True},
+        "device_host_name": {"readonly": True},
+        "service_host_name": {"readonly": True},
         "locations": {"readonly": True},
+        "iot_hub_details": {"readonly": True},
     }
 
     _attribute_map = {
@@ -1684,6 +1711,8 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
         "provisioning_state": {"key": "provisioningState", "type": "str"},
         "state": {"key": "state", "type": "str"},
         "host_name": {"key": "hostName", "type": "str"},
+        "device_host_name": {"key": "deviceHostName", "type": "str"},
+        "service_host_name": {"key": "serviceHostName", "type": "str"},
         "event_hub_endpoints": {"key": "eventHubEndpoints", "type": "{EventHubProperties}"},
         "routing": {"key": "routing", "type": "RoutingProperties"},
         "storage_endpoints": {"key": "storageEndpoints", "type": "{StorageEndpointProperties}"},
@@ -1699,6 +1728,7 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
         "root_certificate": {"key": "rootCertificate", "type": "RootCertificateProperties"},
         "ip_version": {"key": "ipVersion", "type": "str"},
         "device_registry": {"key": "deviceRegistry", "type": "DeviceRegistry"},
+        "iot_hub_details": {"key": "iotHubDetails", "type": "IotHubDetails"},
     }
 
     def __init__(  # pylint: disable=too-many-locals
@@ -1815,9 +1845,11 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
         self.network_rule_sets = network_rule_sets
         self.min_tls_version = min_tls_version
         self.private_endpoint_connections = private_endpoint_connections
-        self.provisioning_state = None
-        self.state = None
-        self.host_name = None
+        self.provisioning_state: Optional[str] = None
+        self.state: Optional[str] = None
+        self.host_name: Optional[str] = None
+        self.device_host_name: Optional[str] = None
+        self.service_host_name: Optional[str] = None
         self.event_hub_endpoints = event_hub_endpoints
         self.routing = routing
         self.storage_endpoints = storage_endpoints
@@ -1828,11 +1860,12 @@ class IotHubProperties(_serialization.Model):  # pylint: disable=too-many-instan
         self.device_streams = device_streams
         self.features = features
         self.encryption = encryption
-        self.locations = None
+        self.locations: Optional[List["_models.IotHubLocationDescription"]] = None
         self.enable_data_residency = enable_data_residency
         self.root_certificate = root_certificate
         self.ip_version = ip_version
         self.device_registry = device_registry
+        self.iot_hub_details: Optional["_models.IotHubDetails"] = None
 
 
 class IotHubPropertiesDeviceStreams(_serialization.Model):
@@ -1883,9 +1916,9 @@ class IotHubQuotaMetricInfo(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.name = None
-        self.current_value = None
-        self.max_value = None
+        self.name: Optional[str] = None
+        self.current_value: Optional[int] = None
+        self.max_value: Optional[int] = None
 
 
 class IotHubQuotaMetricInfoListResult(_serialization.Model):
@@ -1915,7 +1948,7 @@ class IotHubQuotaMetricInfoListResult(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.value = value
-        self.next_link = None
+        self.next_link: Optional[str] = None
 
 
 class IotHubSkuDescription(_serialization.Model):
@@ -1953,7 +1986,7 @@ class IotHubSkuDescription(_serialization.Model):
         :paramtype capacity: ~iothub.mgmt.models.IotHubCapacity
         """
         super().__init__(**kwargs)
-        self.resource_type = None
+        self.resource_type: Optional[str] = None
         self.sku = sku
         self.capacity = capacity
 
@@ -1985,7 +2018,7 @@ class IotHubSkuDescriptionListResult(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.value = value
-        self.next_link = None
+        self.next_link: Optional[str] = None
 
 
 class IotHubSkuInfo(_serialization.Model):
@@ -2028,7 +2061,7 @@ class IotHubSkuInfo(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.name = name
-        self.tier = None
+        self.tier: Optional[Union[str, "_models.IotHubSkuTier"]] = None
         self.capacity = capacity
 
 
@@ -2129,14 +2162,14 @@ class JobResponse(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.job_id = None
-        self.start_time_utc = None
-        self.end_time_utc = None
-        self.type = None
-        self.status = None
-        self.failure_reason = None
-        self.status_message = None
-        self.parent_job_id = None
+        self.job_id: Optional[str] = None
+        self.start_time_utc: Optional[datetime.datetime] = None
+        self.end_time_utc: Optional[datetime.datetime] = None
+        self.type: Optional[Union[str, "_models.JobType"]] = None
+        self.status: Optional[Union[str, "_models.JobStatus"]] = None
+        self.failure_reason: Optional[str] = None
+        self.status_message: Optional[str] = None
+        self.parent_job_id: Optional[str] = None
 
 
 class JobResponseListResult(_serialization.Model):
@@ -2166,7 +2199,7 @@ class JobResponseListResult(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.value = value
-        self.next_link = None
+        self.next_link: Optional[str] = None
 
 
 class KeyVaultKeyProperties(_serialization.Model):
@@ -2442,7 +2475,7 @@ class Operation(_serialization.Model):
         :paramtype display: ~iothub.mgmt.models.OperationDisplay
         """
         super().__init__(**kwargs)
-        self.name = None
+        self.name: Optional[str] = None
         self.display = display
 
 
@@ -2478,10 +2511,10 @@ class OperationDisplay(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.provider = None
-        self.resource = None
-        self.operation = None
-        self.description = None
+        self.provider: Optional[str] = None
+        self.resource: Optional[str] = None
+        self.operation: Optional[str] = None
+        self.description: Optional[str] = None
 
 
 class OperationInputs(_serialization.Model):
@@ -2535,8 +2568,8 @@ class OperationListResult(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.value = None
-        self.next_link = None
+        self.value: Optional[List["_models.Operation"]] = None
+        self.next_link: Optional[str] = None
 
 
 class PrivateEndpoint(_serialization.Model):
@@ -2559,7 +2592,7 @@ class PrivateEndpoint(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.id = None
+        self.id: Optional[str] = None
 
 
 class PrivateEndpointConnection(_serialization.Model):
@@ -2599,9 +2632,9 @@ class PrivateEndpointConnection(_serialization.Model):
         :paramtype properties: ~iothub.mgmt.models.PrivateEndpointConnectionProperties
         """
         super().__init__(**kwargs)
-        self.id = None
-        self.name = None
-        self.type = None
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.type: Optional[str] = None
         self.properties = properties
 
 
@@ -2748,9 +2781,9 @@ class RegistryStatistics(_serialization.Model):
     def __init__(self, **kwargs: Any) -> None:
         """ """
         super().__init__(**kwargs)
-        self.total_device_count = None
-        self.enabled_device_count = None
-        self.disabled_device_count = None
+        self.total_device_count: Optional[int] = None
+        self.enabled_device_count: Optional[int] = None
+        self.disabled_device_count: Optional[int] = None
 
 
 class RootCertificateProperties(_serialization.Model):
@@ -2782,7 +2815,7 @@ class RootCertificateProperties(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.enable_root_certificate_v2 = enable_root_certificate_v2
-        self.last_updated_time_utc = None
+        self.last_updated_time_utc: Optional[datetime.datetime] = None
 
 
 class RouteCompilationError(_serialization.Model):
@@ -2959,7 +2992,7 @@ class RouteProperties(_serialization.Model):
         self.is_enabled = is_enabled
 
 
-class RoutingCosmosDBSqlApiProperties(_serialization.Model):  # pylint: disable=too-many-instance-attributes
+class RoutingCosmosDBSqlApiProperties(_serialization.Model):
     """The properties related to a cosmos DB sql container endpoint.
 
     Variables are only populated by the server, and will be ignored when sending a request.
@@ -3085,7 +3118,7 @@ class RoutingCosmosDBSqlApiProperties(_serialization.Model):  # pylint: disable=
         """
         super().__init__(**kwargs)
         self.name = name
-        self.id = None
+        self.id: Optional[str] = None
         self.subscription_id = subscription_id
         self.resource_group = resource_group
         self.endpoint_uri = endpoint_uri
@@ -3562,7 +3595,7 @@ class RoutingServiceBusTopicEndpointProperties(_serialization.Model):
         self.resource_group = resource_group
 
 
-class RoutingStorageContainerProperties(_serialization.Model):  # pylint: disable=too-many-instance-attributes
+class RoutingStorageContainerProperties(_serialization.Model):
     """The properties related to a storage container endpoint.
 
     All required parameters must be populated in order to send to server.
@@ -3852,7 +3885,7 @@ class SharedAccessSignatureAuthorizationRuleListResult(_serialization.Model):  #
         """
         super().__init__(**kwargs)
         self.value = value
-        self.next_link = None
+        self.next_link: Optional[str] = None
 
 
 class StorageEndpointProperties(_serialization.Model):
@@ -3862,7 +3895,7 @@ class StorageEndpointProperties(_serialization.Model):
 
     :ivar sas_ttl_as_iso8601: The period of time for which the SAS URI generated by IoT Hub for
      file upload is valid. See:
-     https://docs.microsoft.com/azure/iot-hub/iot-hub-devguide-file-upload#file-upload-notification-configuration-options.  # pylint: disable=line-too-long
+     https://docs.microsoft.com/azure/iot-hub/iot-hub-devguide-file-upload#file-upload-notification-configuration-options.
     :vartype sas_ttl_as_iso8601: ~datetime.timedelta
     :ivar connection_string: The connection string for the Azure Storage account to which files are
      uploaded. Required.
@@ -3903,7 +3936,7 @@ class StorageEndpointProperties(_serialization.Model):
         """
         :keyword sas_ttl_as_iso8601: The period of time for which the SAS URI generated by IoT Hub for
          file upload is valid. See:
-         https://docs.microsoft.com/azure/iot-hub/iot-hub-devguide-file-upload#file-upload-notification-configuration-options.  # pylint: disable=line-too-long
+         https://docs.microsoft.com/azure/iot-hub/iot-hub-devguide-file-upload#file-upload-notification-configuration-options.
         :paramtype sas_ttl_as_iso8601: ~datetime.timedelta
         :keyword connection_string: The connection string for the Azure Storage account to which files
          are uploaded. Required.
@@ -4259,4 +4292,4 @@ class UserSubscriptionQuotaListResult(_serialization.Model):
         """
         super().__init__(**kwargs)
         self.value = value
-        self.next_link = None
+        self.next_link: Optional[str] = None

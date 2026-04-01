@@ -81,6 +81,13 @@ class EndpointHealthStatus(str, Enum, metaclass=CaseInsensitiveEnumMeta):
     DEAD = "dead"
 
 
+class GatewayVersion(str, Enum, metaclass=CaseInsensitiveEnumMeta):
+    """The IoT hub Gateway version."""
+
+    V1 = "V1"
+    V2 = "V2"
+
+
 class IotHubNameUnavailabilityReason(str, Enum, metaclass=CaseInsensitiveEnumMeta):
     """The reason for unavailability."""
 
@@ -159,7 +166,7 @@ class JobType(str, Enum, metaclass=CaseInsensitiveEnumMeta):
 
     UNKNOWN = "unknown"
     EXPORT = "export"
-    IMPORT_ENUM = "import"
+    IMPORT = "import"
     BACKUP = "backup"
     READ_DEVICE_PROPERTIES = "readDeviceProperties"
     WRITE_DEVICE_PROPERTIES = "writeDeviceProperties"

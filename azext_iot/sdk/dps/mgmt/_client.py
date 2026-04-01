@@ -8,6 +8,7 @@
 
 from copy import deepcopy
 from typing import Any, TYPE_CHECKING
+from typing_extensions import Self
 
 from azure.core.pipeline import policies
 from azure.core.rest import HttpRequest, HttpResponse
@@ -20,11 +21,10 @@ from ._serialization import Deserializer, Serializer
 from .operations import DpsCertificateOperations, IotDpsResourceOperations, Operations
 
 if TYPE_CHECKING:
-    # pylint: disable=unused-import,ungrouped-imports
     from azure.core.credentials import TokenCredential
 
 
-class IotDpsClient:  # pylint: disable=client-accepts-api-version-keyword
+class IotDpsClient:
     """API for using the Azure IoT Hub Device Provisioning Service features.
 
     :ivar operations: Operations operations
@@ -39,7 +39,7 @@ class IotDpsClient:  # pylint: disable=client-accepts-api-version-keyword
     :type subscription_id: str
     :param endpoint: Service URL. Default value is "https://management.azure.com".
     :type endpoint: str
-    :keyword api_version: Api Version. Default value is "2025-02-01-preview". Note that overriding
+    :keyword api_version: Api Version. Default value is "2026-03-01-preview". Note that overriding
      this default value may result in unsupported behavior.
     :paramtype api_version: str
     :keyword int polling_interval: Default waiting time between two polls for LRO operations if no
@@ -108,7 +108,7 @@ class IotDpsClient:  # pylint: disable=client-accepts-api-version-keyword
     def close(self) -> None:
         self._client.close()
 
-    def __enter__(self) -> "IotDpsClient":
+    def __enter__(self) -> Self:
         self._client.__enter__()
         return self
 
