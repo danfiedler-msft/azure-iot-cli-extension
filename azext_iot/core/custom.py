@@ -34,9 +34,15 @@ from azext_iot.core.shared import (
     ADR_CONFIGURE_ROLES_ERROR_MSG,
     ADR_NS_IDENTITY_ROLES_FOR_HUB,
     ADR_ROLE_ASSIGN_ERROR_MSG,
+    AccessRights,
+    AuthenticationType,
+    DeviceRegistryNamespaceAuthenticationType,
     EncodingFormat,
     EndpointType,
     IdentityType,
+    IotDpsSku,
+    IotHubSku,
+    ManagedServiceIdentityType,
     RenewKeyType,
 )
 from azext_iot.iothub.common import SYSTEM_ASSIGNED_IDENTITY
@@ -46,6 +52,7 @@ logger = get_logger(__name__)
 # Identity types
 SYSTEM_ASSIGNED = 'SystemAssigned'
 NONE_IDENTITY = 'None'
+
 
 # CUSTOM TYPE
 class KeyType(Enum):
@@ -60,10 +67,10 @@ class KeyType(Enum):
 # assigning multiple permissions.
 # The underlying IoT SDK should handle this. However it isn't right now. Remove this after it is fixed in IoT SDK.
 class SimpleAccessRights(Enum):
-    registry_read = "RegistryRead"
-    registry_write = "RegistryWrite"
-    service_connect = "ServiceConnect"
-    device_connect = "DeviceConnect"
+    registry_read = AccessRights.REGISTRY_READ
+    registry_write = AccessRights.REGISTRY_WRITE
+    service_connect = AccessRights.SERVICE_CONNECT
+    device_connect = AccessRights.DEVICE_CONNECT
 
 
 def _get_resource_group_from_hub(hub):
@@ -90,7 +97,7 @@ def iot_dps_create(
     dps_name,
     resource_group_name,
     location=None,
-    sku="S1",
+    sku=IotDpsSku.S1,
     unit=1,
     tags=None,
     enable_data_residency=None,
@@ -648,7 +655,7 @@ def iot_hub_create(
     hub_name,
     resource_group_name,
     location=None,
-    sku="S1",
+    sku=IotHubSku.S1,
     unit=1,
     partition_count=4,
     retention_day=1,
@@ -689,7 +696,7 @@ def iot_hub_create(
         raise RequiredArgumentMissingError('Please mention storage container name.')
     if fileupload_storage_container_name and not fileupload_storage_connectionstring:
         raise RequiredArgumentMissingError('Please mention storage connection string.')
-    identity_based_file_upload = fileupload_storage_authentication_type and fileupload_storage_authentication_type == "identityBased"
+    identity_based_file_upload = fileupload_storage_authentication_type and fileupload_storage_authentication_type == AuthenticationType.IdentityBased
     if not identity_based_file_upload and fileupload_storage_identity:
         raise RequiredArgumentMissingError('In order to set a fileupload storage identity, please set file upload storage authentication (--fsa) to IdentityBased')
     if identity_based_file_upload or fileupload_storage_identity:
@@ -882,7 +889,7 @@ def update_iot_hub_custom(instance,
             default_storage_endpoint = {"containerName": fileupload_storage_container_name, "connectionString": fileupload_storage_connectionstring}
 
         # if setting a fileupload storage identity or changing fileupload to identity-based
-        if fileupload_storage_identity or fileupload_storage_authentication_type == "identityBased":
+        if fileupload_storage_identity or fileupload_storage_authentication_type == AuthenticationType.IdentityBased:
             _validate_fileupload_identity(instance, fileupload_storage_identity)
 
         instance["properties"]["storageEndpoints"]['$default'] = _process_fileupload_args(
@@ -906,8 +913,8 @@ def update_iot_hub_custom(instance,
     existing_sku_name = instance["sku"]["name"]
     final_sku_name = sku or existing_sku_name
 
-    is_existing_gen2 = existing_sku_name == "GEN2"
-    is_final_gen2 = final_sku_name == "GEN2"
+    is_existing_gen2 = existing_sku_name == IotHubSku.GEN2
+    is_final_gen2 = final_sku_name == IotHubSku.GEN2
 
     if sku and (is_existing_gen2 ^ is_final_gen2):
         raise InvalidArgumentValueError(
@@ -1232,7 +1239,7 @@ def iot_hub_get_stats(client, hub_name, resource_group_name=None):
 
 
 def validate_authentication_type_input(endpoint_type, connection_string=None, authentication_type=None, endpoint_uri=None, entity_path=None):
-    is_keyBased = ("keyBased" == authentication_type) or (authentication_type is None)
+    is_keyBased = (AuthenticationType.KeyBased == authentication_type) or (authentication_type is None)
     has_connection_string = connection_string is not None
     if is_keyBased and not has_connection_string:
         raise CLIError("Please provide a connection string '--connection-string/-c'")
@@ -1254,7 +1261,7 @@ def iot_hub_routing_endpoint_create(cmd, client, hub_name, endpoint_name, endpoi
                                     identity=None):
     resource_group_name = _ensure_hub_resource_group_name(client, resource_group_name, hub_name)
     hub = iot_hub_get(cmd, client, hub_name, resource_group_name)
-    if identity and authentication_type != "identityBased":
+    if identity and authentication_type != AuthenticationType.IdentityBased:
         raise ArgumentUsageError("In order to use an identity for authentication, you must select --auth-type as 'identityBased'")
 
     if EndpointType.EventHub.value == endpoint_type.lower():
@@ -1549,21 +1556,21 @@ def _convert_perms_to_access_rights(perm_list):
     sorted_perm_list = sorted(perm_set)
     perm_key = '_'.join(sorted_perm_list)
     access_rights_mapping = {
-        'registryread': "RegistryRead",
-        'registrywrite': "RegistryWrite",
-        'serviceconnect': "ServiceConnect",
-        'deviceconnect': "DeviceConnect",
-        'registryread_registrywrite': "RegistryRead, RegistryWrite",
-        'registryread_serviceconnect': "RegistryRead, ServiceConnect",
-        'deviceconnect_registryread': "RegistryRead, DeviceConnect",
-        'registrywrite_serviceconnect': "RegistryWrite, ServiceConnect",
-        'deviceconnect_registrywrite': "RegistryWrite, DeviceConnect",
-        'deviceconnect_serviceconnect': "ServiceConnect, DeviceConnect",
-        'registryread_registrywrite_serviceconnect': "RegistryRead, RegistryWrite, ServiceConnect",
-        'deviceconnect_registryread_registrywrite': "RegistryRead, RegistryWrite, DeviceConnect",
-        'deviceconnect_registryread_serviceconnect': "RegistryRead, ServiceConnect, DeviceConnect",
-        'deviceconnect_registrywrite_serviceconnect': "RegistryWrite, ServiceConnect, DeviceConnect",
-        'deviceconnect_registryread_registrywrite_serviceconnect': "RegistryRead, RegistryWrite, ServiceConnect, DeviceConnect"
+        'registryread': AccessRights.REGISTRY_READ,
+        'registrywrite': AccessRights.REGISTRY_WRITE,
+        'serviceconnect': AccessRights.SERVICE_CONNECT,
+        'deviceconnect': AccessRights.DEVICE_CONNECT,
+        'registryread_registrywrite': AccessRights.REGISTRY_READ_REGISTRY_WRITE,
+        'registryread_serviceconnect': AccessRights.REGISTRY_READ_SERVICE_CONNECT,
+        'deviceconnect_registryread': AccessRights.REGISTRY_READ_DEVICE_CONNECT,
+        'registrywrite_serviceconnect': AccessRights.REGISTRY_WRITE_SERVICE_CONNECT,
+        'deviceconnect_registrywrite': AccessRights.REGISTRY_WRITE_DEVICE_CONNECT,
+        'deviceconnect_serviceconnect': AccessRights.SERVICE_CONNECT_DEVICE_CONNECT,
+        'registryread_registrywrite_serviceconnect': AccessRights.REGISTRY_READ_REGISTRY_WRITE_SERVICE_CONNECT,
+        'deviceconnect_registryread_registrywrite': AccessRights.REGISTRY_READ_REGISTRY_WRITE_DEVICE_CONNECT,
+        'deviceconnect_registryread_serviceconnect': AccessRights.REGISTRY_READ_SERVICE_CONNECT_DEVICE_CONNECT,
+        'deviceconnect_registrywrite_serviceconnect': AccessRights.REGISTRY_WRITE_SERVICE_CONNECT_DEVICE_CONNECT,
+        'deviceconnect_registryread_registrywrite_serviceconnect': AccessRights.REGISTRY_READ_REGISTRY_WRITE_SERVICE_CONNECT_DEVICE_CONNECT
     }
     return access_rights_mapping[perm_key]
 
@@ -1658,12 +1665,12 @@ def _process_fileupload_args(
         fileupload_storage_identity=None,
 ):
     from datetime import timedelta
-    if fileupload_storage_authentication_type and fileupload_storage_authentication_type == "identityBased":
-        default_storage_endpoint["authenticationType"] = "identityBased"
+    if fileupload_storage_authentication_type and fileupload_storage_authentication_type == AuthenticationType.IdentityBased:
+        default_storage_endpoint["authenticationType"] = AuthenticationType.IdentityBased
         if fileupload_storage_container_uri:
             default_storage_endpoint["containerUri"] = fileupload_storage_container_uri
-    elif fileupload_storage_authentication_type and fileupload_storage_authentication_type == "keyBased":
-        default_storage_endpoint["authenticationType"] = "keyBased"
+    elif fileupload_storage_authentication_type and fileupload_storage_authentication_type == AuthenticationType.KeyBased:
+        default_storage_endpoint["authenticationType"] = AuthenticationType.KeyBased
         default_storage_endpoint["identity"] = None
     elif fileupload_storage_authentication_type is not None:
         default_storage_endpoint["authenticationType"] = None
@@ -1682,7 +1689,7 @@ def _process_fileupload_args(
     # Fix for identity/authentication-type params missing on hybrid profile api
     if "authenticationType" in default_storage_endpoint:
         # If we are now (or will be) using fsa=identity AND we've set a new identity
-        if default_storage_endpoint["authenticationType"] == "identityBased" and fileupload_storage_identity:
+        if default_storage_endpoint["authenticationType"] == AuthenticationType.IdentityBased and fileupload_storage_identity:
             # setup new fsi
             default_storage_endpoint["identity"] = {"userAssignedIdentity": fileupload_storage_identity} if fileupload_storage_identity not in [IdentityType.none.value, SYSTEM_ASSIGNED_IDENTITY] else None
         # otherwise - let them know they need identity-based auth enabled
@@ -1744,7 +1751,7 @@ def _validate_and_set_adr_properties(
 ):
     """Validate and set Azure Device Registry properties for IoT Hub."""
 
-    if sku == "GEN2":
+    if sku == IotHubSku.GEN2:
         # Generation2 hubs require both ADR properties
         if not (adr_namespace_resource_id and adr_identity_resource_id):
             raise RequiredArgumentMissingError(
@@ -1853,12 +1860,12 @@ def _build_dps_adr_properties(
             )
         adr_namespace_obj = {
             "resourceId": adr_ns_id,
-            "authenticationType": "SystemAssigned"
+            "authenticationType": DeviceRegistryNamespaceAuthenticationType.SYSTEM_ASSIGNED
         }
         # Set user identity and authentication type if provided
         if adr_ns_identity_id:
             adr_namespace_obj["selectedUserAssignedIdentityResourceId"] = adr_ns_identity_id
-            adr_namespace_obj["authenticationType"] = "UserAssigned"
+            adr_namespace_obj["authenticationType"] = DeviceRegistryNamespaceAuthenticationType.USER_ASSIGNED
     else:
         # If resource ID is explicitly set to empty, remove all properties
         if adr_ns_id is not None and not adr_ns_id:
@@ -1873,10 +1880,10 @@ def _build_dps_adr_properties(
         if adr_ns_identity_id is not None:
             if adr_ns_identity_id:
                 adr_namespace_obj["selectedUserAssignedIdentityResourceId"] = adr_ns_identity_id
-                adr_namespace_obj["authenticationType"] = "UserAssigned"
+                adr_namespace_obj["authenticationType"] = DeviceRegistryNamespaceAuthenticationType.USER_ASSIGNED
             else:
                 adr_namespace_obj["selectedUserAssignedIdentityResourceId"] = None
-                adr_namespace_obj["authenticationType"] = "SystemAssigned"
+                adr_namespace_obj["authenticationType"] = DeviceRegistryNamespaceAuthenticationType.SYSTEM_ASSIGNED
 
     return adr_namespace_obj
 
@@ -1884,11 +1891,11 @@ def _build_dps_adr_properties(
 def _construct_identity_info(enable_system_identity, user_identities) -> Optional[dict]:
     identity = None
     if enable_system_identity and user_identities:
-        identity_type = "SystemAssigned,UserAssigned"
+        identity_type = ManagedServiceIdentityType.SYSTEM_ASSIGNED_USER_ASSIGNED
     elif enable_system_identity:
-        identity_type = "SystemAssigned"
+        identity_type = ManagedServiceIdentityType.SYSTEM_ASSIGNED
     elif user_identities:
-        identity_type = "UserAssigned"
+        identity_type = ManagedServiceIdentityType.USER_ASSIGNED
     else:
         return identity
 
@@ -1920,8 +1927,8 @@ def dps_identity_assign(client, dps_name: str, resource_group_name:Optional[str]
         has_system_identity = system_assigned
     else:
         has_system_identity = existing_identity and existing_identity["type"] in [
-            "SystemAssigned",
-            "SystemAssigned,UserAssigned",
+            ManagedServiceIdentityType.SYSTEM_ASSIGNED,
+            ManagedServiceIdentityType.SYSTEM_ASSIGNED_USER_ASSIGNED,
         ]
 
     # Merge existing and new user identities
@@ -1948,13 +1955,13 @@ def dps_identity_remove(client, dps_name: str, resource_group_name:Optional[str]
         raise RequiredArgumentMissingError("Specify --system-assigned and/or --user-assigned")
 
     existing_identity = dps.get("identity")
-    if not existing_identity or existing_identity["type"] == "None":
+    if not existing_identity or existing_identity["type"] == ManagedServiceIdentityType.NONE:
         # No identity to remove
         return dps
 
     has_system_identity = existing_identity["type"] in [
-        "SystemAssigned",
-        "SystemAssigned,UserAssigned",
+        ManagedServiceIdentityType.SYSTEM_ASSIGNED,
+        ManagedServiceIdentityType.SYSTEM_ASSIGNED_USER_ASSIGNED,
     ]
 
     if system_assigned is True and has_system_identity:
@@ -1975,7 +1982,7 @@ def dps_identity_remove(client, dps_name: str, resource_group_name:Optional[str]
 
     # If no identities remain, set to None type
     if not enable_system and not existing_user_identities:
-        dps["identity"] = {"type": "None"}
+        dps["identity"] = {"type": ManagedServiceIdentityType.NONE}
     else:
         dps["identity"] = _construct_identity_info(
             enable_system, existing_user_identities if existing_user_identities else None
