@@ -4,7 +4,6 @@
 # Licensed under the MIT License. See License.txt in the project root for license information.
 # --------------------------------------------------------------------------------------------
 
-import pytest
 from azext_iot.common.shared import HostnameType
 
 path_fetch_tls = "azext_iot.operations.hub._fetch_tls_hostnames"
@@ -14,70 +13,61 @@ path_get_mgmt_client = "azure.cli.core.commands.client_factory.get_mgmt_service_
 class TestResolveHostnameByType:
     """Tests for _resolve_hostname_by_type in hub.py"""
 
-    @pytest.fixture
-    def mock_hub(self, mocker):
-        hub = mocker.MagicMock()
-        hub.name = "testhub"
-        hub.properties.host_name = "testhub.azure-devices.net"
-        hub.additional_properties = {"resourcegroup": "testrg"}
-        hub.location = "eastus"
-        return hub
+    default_hostname = "testhub.azure-devices.net"
+    hub_name = "testhub"
+    resource_group = "testrg"
+    location = "eastus"
 
-    def test_classic_returns_host_name(self, fixture_cmd, mock_hub):
+    def _resolve(self, fixture_cmd, hostname_type):
         from azext_iot.operations.hub import _resolve_hostname_by_type
+        return _resolve_hostname_by_type(
+            fixture_cmd, self.default_hostname, self.hub_name,
+            self.resource_group, hostname_type, self.location
+        )
 
-        result = _resolve_hostname_by_type(fixture_cmd, mock_hub, HostnameType.classic.value)
+    def test_classic_returns_host_name(self, fixture_cmd):
+        result = self._resolve(fixture_cmd, HostnameType.classic.value)
         assert result == "testhub.azure-devices.net"
 
-    def test_default_returns_classic(self, fixture_cmd, mock_hub):
+    def test_default_returns_classic(self, fixture_cmd):
         """Default hostname_type is classic — should return classic hostname without any API call."""
-        from azext_iot.operations.hub import _resolve_hostname_by_type
-
-        result = _resolve_hostname_by_type(fixture_cmd, mock_hub, HostnameType.classic.value)
+        result = self._resolve(fixture_cmd, HostnameType.classic.value)
         assert result == "testhub.azure-devices.net"
 
-    def test_device_returns_device_hostname(self, mocker, fixture_cmd, mock_hub):
-        from azext_iot.operations.hub import _resolve_hostname_by_type
-
+    def test_device_returns_device_hostname(self, mocker, fixture_cmd):
         mocker.patch(path_fetch_tls, return_value={
             "deviceHostName": "testhub.device.azure-devices.net",
             "serviceHostName": "testhub.service.azure-devices.net",
             "gatewayVersion": "V2",
         })
-        result = _resolve_hostname_by_type(fixture_cmd, mock_hub, HostnameType.device.value)
+        result = self._resolve(fixture_cmd, HostnameType.device.value)
         assert result == "testhub.device.azure-devices.net"
 
-    def test_service_returns_service_hostname(self, mocker, fixture_cmd, mock_hub):
-        from azext_iot.operations.hub import _resolve_hostname_by_type
-
+    def test_service_returns_service_hostname(self, mocker, fixture_cmd):
         mocker.patch(path_fetch_tls, return_value={
             "deviceHostName": "testhub.device.azure-devices.net",
             "serviceHostName": "testhub.service.azure-devices.net",
             "gatewayVersion": "V2",
         })
-        result = _resolve_hostname_by_type(fixture_cmd, mock_hub, HostnameType.service.value)
+        result = self._resolve(fixture_cmd, HostnameType.service.value)
         assert result == "testhub.service.azure-devices.net"
 
-    def test_gwv1_falls_back_to_classic(self, mocker, fixture_cmd, mock_hub):
-        from azext_iot.operations.hub import _resolve_hostname_by_type
-
+    def test_gwv1_falls_back_to_classic(self, mocker, fixture_cmd):
         mocker.patch(path_fetch_tls, return_value={
             "deviceHostName": None,
             "serviceHostName": None,
             "gatewayVersion": None,
         })
-        result = _resolve_hostname_by_type(fixture_cmd, mock_hub, HostnameType.device.value)
+        result = self._resolve(fixture_cmd, HostnameType.device.value)
         assert result == "testhub.azure-devices.net"
 
-    def test_gwv1_falls_back_with_v1_version(self, mocker, fixture_cmd, mock_hub):
-        from azext_iot.operations.hub import _resolve_hostname_by_type
-
+    def test_gwv1_falls_back_with_v1_version(self, mocker, fixture_cmd):
         mocker.patch(path_fetch_tls, return_value={
             "deviceHostName": None,
             "serviceHostName": None,
             "gatewayVersion": "V1",
         })
-        result = _resolve_hostname_by_type(fixture_cmd, mock_hub, HostnameType.service.value)
+        result = self._resolve(fixture_cmd, HostnameType.service.value)
         assert result == "testhub.azure-devices.net"
 
 

@@ -2402,52 +2402,54 @@ def _fetch_tls_hostnames(cmd, hub_name, resource_group_name, hub_location=None):
     from azure.cli.core.profiles import ResourceType
     from azure.core.rest import HttpRequest
 
-    client = get_mgmt_service_client(cmd.cli_ctx, ResourceType.MGMT_IOTHUB)
-    sub_id = client._config.subscription_id
+    try:
+        client = get_mgmt_service_client(cmd.cli_ctx, ResourceType.MGMT_IOTHUB)
+        sub_id = client._config.subscription_id
 
-    # Use regional management endpoint for Canary regions, otherwise standard
-    mgmt_host = "management.azure.com"
-    if hub_location and hub_location.lower().endswith("euap"):
-        mgmt_host = f"{hub_location}.management.azure.com"
+        # Use regional management endpoint for Canary regions, otherwise standard
+        mgmt_host = "management.azure.com"
+        if hub_location and hub_location.lower().endswith("euap"):
+            mgmt_host = f"{hub_location}.management.azure.com"
 
-    url = (
-        f"https://{mgmt_host}/subscriptions/{sub_id}"
-        f"/resourceGroups/{resource_group_name}"
-        f"/providers/Microsoft.Devices/IotHubs/{hub_name}"
-    )
-    req = HttpRequest(method="GET", url=url, params={"api-version": IOTHUB_PREVIEW_API_VERSION})
-    resp = client.iot_hub_resource._client.send_request(req)
-    if resp.status_code >= 400:
+        url = (
+            f"https://{mgmt_host}/subscriptions/{sub_id}"
+            f"/resourceGroups/{resource_group_name}"
+            f"/providers/Microsoft.Devices/IotHubs/{hub_name}"
+        )
+        req = HttpRequest(method="GET", url=url, params={"api-version": IOTHUB_PREVIEW_API_VERSION})
+        resp = client.iot_hub_resource._client.send_request(req)
+        if resp.status_code >= 400:
+            return {"deviceHostName": None, "serviceHostName": None, "gatewayVersion": None}
+        data = resp.json()
+        props = data.get("properties", {})
+        gateway_version = props.get("iotHubDetails", {}).get("gatewayVersion")
+        return {
+            "deviceHostName": props.get("deviceHostName"),
+            "serviceHostName": props.get("serviceHostName"),
+            "gatewayVersion": gateway_version,
+        }
+    except Exception as e:
+        logger.warning("Failed to fetch TLS 1.3 hostnames for '%s': %s", hub_name, str(e))
         return {"deviceHostName": None, "serviceHostName": None, "gatewayVersion": None}
-    data = resp.json()
-    props = data.get("properties", {})
-    gateway_version = props.get("iotHubDetails", {}).get("gatewayVersion")
-    return {
-        "deviceHostName": props.get("deviceHostName"),
-        "serviceHostName": props.get("serviceHostName"),
-        "gatewayVersion": gateway_version,
-    }
 
 
-def _resolve_hostname_by_type(cmd, hub, hostname_type):
+def _resolve_hostname_by_type(cmd, default_hostname, hub_name, resource_group, hostname_type, hub_location=None):
     """Resolve the appropriate hostname based on the hostname type."""
     if hostname_type == HostnameType.classic.value:
-        return hub.properties.host_name
+        return default_hostname
 
-    tls_info = _fetch_tls_hostnames(
-        cmd, hub.name, hub.additional_properties.get("resourcegroup"), hub.location
-    )
+    tls_info = _fetch_tls_hostnames(cmd, hub_name, resource_group, hub_location)
 
     if tls_info.get("gatewayVersion") != "V2":
         logger.warning(
             "IoT Hub '%s' is not a GWv2 hub. Falling back to classic hostname. "
             "The 'device' and 'service' hostname types are only available on GWv2 IoT Hubs.",
-            hub.name,
+            hub_name,
         )
-        return hub.properties.host_name
+        return default_hostname
 
     hostname_key = "deviceHostName" if hostname_type == HostnameType.device.value else "serviceHostName"
-    return tls_info.get(hostname_key) or hub.properties.host_name
+    return tls_info.get(hostname_key) or default_hostname
 
 
 def _build_device_or_module_connection_string(entity, key_type="primary", hostname_override=None):
@@ -2493,19 +2495,20 @@ def iot_get_device_connection_string(
     hostname_type=HostnameType.classic.value,
 ):
     result = {}
-    device = iot_device_show(
-        cmd,
-        device_id,
-        hub_name_or_hostname=hub_name_or_hostname,
+    discovery = IotHubDiscovery(cmd)
+    target = discovery.get_target(
+        resource_name=hub_name_or_hostname,
         resource_group_name=resource_group_name,
         login=login,
-        auth_type_dataplane=auth_type_dataplane,
+        auth_type=auth_type_dataplane,
     )
+    device = _iot_device_show(target, device_id)
     hostname_override = None
     if hostname_type != HostnameType.classic.value:
-        discovery = IotHubDiscovery(cmd)
-        hub = discovery.find_resource(hub_name_or_hostname, resource_group_name)
-        hostname_override = _resolve_hostname_by_type(cmd, hub, hostname_type)
+        hostname_override = _resolve_hostname_by_type(
+            cmd, target["entity"], target["name"], target["resourcegroup"],
+            hostname_type, target.get("location")
+        )
     result["connectionString"] = _build_device_or_module_connection_string(
         device, key_type, hostname_override=hostname_override
     )
@@ -2524,20 +2527,20 @@ def iot_get_module_connection_string(
     hostname_type=HostnameType.classic.value,
 ):
     result = {}
-    module = iot_device_module_show(
-        cmd,
-        device_id,
-        module_id,
+    discovery = IotHubDiscovery(cmd)
+    target = discovery.get_target(
+        resource_name=hub_name_or_hostname,
         resource_group_name=resource_group_name,
-        hub_name_or_hostname=hub_name_or_hostname,
         login=login,
-        auth_type_dataplane=auth_type_dataplane,
+        auth_type=auth_type_dataplane,
     )
+    module = _iot_device_module_show(target, device_id, module_id)
     hostname_override = None
     if hostname_type != HostnameType.classic.value:
-        discovery = IotHubDiscovery(cmd)
-        hub = discovery.find_resource(hub_name_or_hostname, resource_group_name)
-        hostname_override = _resolve_hostname_by_type(cmd, hub, hostname_type)
+        hostname_override = _resolve_hostname_by_type(
+            cmd, target["entity"], target["name"], target["resourcegroup"],
+            hostname_type, target.get("location")
+        )
     result["connectionString"] = _build_device_or_module_connection_string(
         module, key_type, hostname_override=hostname_override
     )
@@ -3020,7 +3023,10 @@ def _get_hub_connection_string(
             )
         ]
 
-    hostname = _resolve_hostname_by_type(cmd, hub, hostname_type)
+    hostname = _resolve_hostname_by_type(
+        cmd, hub.properties.host_name, hub.name,
+        hub.additional_properties["resourcegroup"], hostname_type, hub.location
+    )
     cs_template = "HostName={};SharedAccessKeyName={};SharedAccessKey={}"
     return [
         cs_template.format(
