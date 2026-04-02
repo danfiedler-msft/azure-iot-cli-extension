@@ -6,6 +6,7 @@
 
 import pytest
 from azure.cli.core.azclierror import RequiredArgumentMissingError
+from azext_iot.core.shared import DeviceRegistryNamespaceAuthenticationType
 from azext_iot.tests.generators import generate_generic_id
 
 # Import the functions under test
@@ -19,7 +20,7 @@ identity_id = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentiti
 
 mock_existing_adr_properties = {
     "resourceId": "/old/namespace/id",
-    "authenticationType": "SystemAssigned",
+    "authenticationType": DeviceRegistryNamespaceAuthenticationType.SYSTEM_ASSIGNED,
 }
 
 
@@ -62,10 +63,10 @@ class TestBuildDPSADRProperties(object):
             # Creating new namespace
             assert result["resourceId"] == adr_ns_id
             if has_user_identity:
-                assert result["authenticationType"] == "UserAssigned"
+                assert result["authenticationType"] == DeviceRegistryNamespaceAuthenticationType.USER_ASSIGNED
                 assert result["selectedUserAssignedIdentityResourceId"] == adr_ns_identity_id
             else:
-                assert result["authenticationType"] == "SystemAssigned"
+                assert result["authenticationType"] == DeviceRegistryNamespaceAuthenticationType.SYSTEM_ASSIGNED
                 assert result.get("selectedUserAssignedIdentityResourceId") is None
         else:
             # Updating existing namespace
@@ -81,11 +82,11 @@ class TestBuildDPSADRProperties(object):
                 if adr_ns_identity_id == "":
                     # Clearing identity - should switch to system auth
                     assert result["selectedUserAssignedIdentityResourceId"] is None
-                    assert result["authenticationType"] == "SystemAssigned"
+                    assert result["authenticationType"] == DeviceRegistryNamespaceAuthenticationType.SYSTEM_ASSIGNED
                 else:
                     # Setting identity - should switch to user auth
                     assert result["selectedUserAssignedIdentityResourceId"] == adr_ns_identity_id
-                    assert result["authenticationType"] == "UserAssigned"
+                    assert result["authenticationType"] == DeviceRegistryNamespaceAuthenticationType.USER_ASSIGNED
             else:
                 # No identity change
                 assert result["authenticationType"] == existing_namespace["authenticationType"]

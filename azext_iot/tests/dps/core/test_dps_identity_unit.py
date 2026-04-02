@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 from azure.cli.core.azclierror import RequiredArgumentMissingError
 from azext_iot.tests.generators import generate_generic_id
 
+from azext_iot.core.shared import ManagedServiceIdentityType
 from azext_iot.core.custom import (
     dps_identity_assign,
     dps_identity_remove,
@@ -47,11 +48,11 @@ class TestDPSIdentityAssign(object):
 
         # Determine expected type based on input combination
         if system_assigned and user_assigned:
-            expected_type = "SystemAssigned,UserAssigned"
+            expected_type = ManagedServiceIdentityType.SYSTEM_ASSIGNED_USER_ASSIGNED
         elif system_assigned:
-            expected_type = "SystemAssigned"
+            expected_type = ManagedServiceIdentityType.SYSTEM_ASSIGNED
         else:  # user_assigned only
-            expected_type = "UserAssigned"
+            expected_type = ManagedServiceIdentityType.USER_ASSIGNED
 
         # Verify the DPS identity was set correctly
         if not system_assigned and not user_assigned:
@@ -89,7 +90,7 @@ class TestDPSIdentityAssign(object):
         mock_client = Mock()
         existing_user_id = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/existing-identity"
         existing_identity = {
-            "type": "UserAssigned",
+            "type": ManagedServiceIdentityType.USER_ASSIGNED,
             "userAssignedIdentities": {existing_user_id: {}},
         }
         mock_dps = {"identity": existing_identity}
@@ -113,7 +114,7 @@ class TestDPSIdentityRemove(object):
         mock_ensure_rg.return_value = "test-rg"
 
         mock_client = Mock()
-        existing_identity = {"type": "SystemAssigned"}
+        existing_identity = {"type": ManagedServiceIdentityType.SYSTEM_ASSIGNED}
         mock_dps = {"identity": existing_identity}
         mock_client.iot_dps_resource.get.return_value = mock_dps
         mock_client.iot_dps_resource.begin_create_or_update.return_value = Mock()
@@ -121,7 +122,7 @@ class TestDPSIdentityRemove(object):
         dps_identity_remove(mock_client, dps_name="test-dps", system_assigned=True)
 
         # Verify no identity
-        assert mock_dps["identity"]["type"] == "None"
+        assert mock_dps["identity"]["type"] == ManagedServiceIdentityType.NONE
 
     @patch("azext_iot.core.custom._ensure_dps_resource_group_name")
     def test_dps_identity_remove_user_only(self, mock_ensure_rg):
@@ -132,7 +133,7 @@ class TestDPSIdentityRemove(object):
         user_id_to_remove = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/remove-identity"
         user_id_to_keep = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/keep-identity"
         existing_identity = {
-            "type": "UserAssigned",
+            "type": ManagedServiceIdentityType.USER_ASSIGNED,
             "userAssignedIdentities": {
                 user_id_to_remove: {},
                 user_id_to_keep: {},
@@ -156,7 +157,7 @@ class TestDPSIdentityRemove(object):
         mock_client = Mock()
         user_id = f"{rg_id}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/test-identity"
         existing_identity = {
-            "type": "SystemAssigned,UserAssigned",
+            "type": ManagedServiceIdentityType.SYSTEM_ASSIGNED_USER_ASSIGNED,
             "userAssignedIdentities": {user_id: {}},
         }
         mock_dps = {"identity": existing_identity}
@@ -166,7 +167,7 @@ class TestDPSIdentityRemove(object):
         dps_identity_remove(mock_client, dps_name="test-dps", system_assigned=True, user_assigned=[user_id])
 
         # Verify no identity
-        assert mock_dps["identity"]["type"] == "None"
+        assert mock_dps["identity"]["type"] == ManagedServiceIdentityType.NONE
 
     def test_dps_identity_remove_no_arguments_raises_error(self):
         """Test that not providing any identity arguments raises an error."""
@@ -184,7 +185,7 @@ class TestDPSIdentityRemove(object):
     def test_dps_identity_show(self):
         """Test showing DPS identity."""
         mock_client = Mock()
-        expected_identity = {"type": "UserAssigned"}
+        expected_identity = {"type": ManagedServiceIdentityType.USER_ASSIGNED}
         mock_dps = {"identity": expected_identity}
         mock_client.iot_dps_resource.get.return_value = mock_dps
 
@@ -211,11 +212,11 @@ class TestConstructIdentityInfo(object):
 
         # Determine expected type
         if enable_system and user_identities:
-            expected_type = "SystemAssigned,UserAssigned"
+            expected_type = ManagedServiceIdentityType.SYSTEM_ASSIGNED_USER_ASSIGNED
         elif enable_system:
-            expected_type = "SystemAssigned"
+            expected_type = ManagedServiceIdentityType.SYSTEM_ASSIGNED
         else:  # user_identities only
-            expected_type = "UserAssigned"
+            expected_type = ManagedServiceIdentityType.USER_ASSIGNED
 
         assert result["type"] == expected_type
 
