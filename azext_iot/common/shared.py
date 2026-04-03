@@ -75,6 +75,16 @@ class KeyType(Enum):
     secondary = "secondary"
 
 
+class HostnameType(Enum):
+    """
+    Type of hostname to use in connection strings.
+    """
+
+    CLASSIC = "classic"
+    DEVICE = "device"
+    SERVICE = "service"
+
+
 class AttestationType(Enum):
     """
     Type of atestation (TMP or certificate based).
