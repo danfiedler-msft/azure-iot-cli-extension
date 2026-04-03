@@ -80,9 +80,9 @@ class HostnameType(Enum):
     Type of hostname to use in connection strings.
     """
 
-    classic = "classic"
-    device = "device"
-    service = "service"
+    CLASSIC = "classic"
+    DEVICE = "device"
+    SERVICE = "service"
 
 
 class AttestationType(Enum):

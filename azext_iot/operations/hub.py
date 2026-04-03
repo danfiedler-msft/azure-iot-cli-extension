@@ -2432,20 +2432,25 @@ def _fetch_tls_hostnames(cmd, hub_name, resource_group_name, hub_location=None):
 
 def _transform_hostname(hostname, hostname_type):
     """Transform a hostname to the requested type via string manipulation."""
-    hub_name = hostname.split(".")[0]
+    parts = hostname.split(".")
+    hub_name = parts[0]
+    if parts[1] in (HostnameType.DEVICE.value, HostnameType.SERVICE.value):
+        domain = ".".join(parts[2:])
+    else:
+        domain = ".".join(parts[1:])
     hostname_map = {
-        HostnameType.classic.value: f"{hub_name}.azure-devices.net",
-        HostnameType.device.value: f"{hub_name}.device.azure-devices.net",
-        HostnameType.service.value: f"{hub_name}.service.azure-devices.net",
+        HostnameType.CLASSIC.value: f"{hub_name}.{domain}",
+        HostnameType.DEVICE.value: f"{hub_name}.device.{domain}",
+        HostnameType.SERVICE.value: f"{hub_name}.service.{domain}",
     }
     return hostname_map.get(hostname_type, hostname)
 
 
 def _resolve_hostname_by_type(target, hostname_type):
-    classic = _transform_hostname(target["entity"], HostnameType.classic.value)
-    if hostname_type == HostnameType.classic.value:
+    classic = _transform_hostname(target["entity"], HostnameType.CLASSIC.value)
+    if hostname_type == HostnameType.CLASSIC.value:
         return classic
-    key = "deviceHostName" if hostname_type == HostnameType.device.value else "serviceHostName"
+    key = "deviceHostName" if hostname_type == HostnameType.DEVICE.value else "serviceHostName"
     resolved = target.get(key)
     if not resolved:
         raise InvalidArgumentValueError(
@@ -2495,7 +2500,7 @@ def iot_get_device_connection_string(
     resource_group_name=None,
     login=None,
     auth_type_dataplane=None,
-    hostname_type=HostnameType.classic.value,
+    hostname_type=HostnameType.CLASSIC.value,
 ):
     result = {}
     discovery = IotHubDiscovery(cmd)
@@ -2525,7 +2530,7 @@ def iot_get_module_connection_string(
     resource_group_name=None,
     login=None,
     auth_type_dataplane=None,
-    hostname_type=HostnameType.classic.value,
+    hostname_type=HostnameType.CLASSIC.value,
 ):
     result = {}
     discovery = IotHubDiscovery(cmd)
@@ -2934,7 +2939,7 @@ def iot_hub_connection_string_show(
     key_type=KeyType.primary.value,
     show_all=False,
     default_eventhub=False,
-    hostname_type=HostnameType.classic.value,
+    hostname_type=HostnameType.CLASSIC.value,
 ):
     discovery = IotHubDiscovery(cmd)
 
@@ -2984,7 +2989,7 @@ def iot_hub_connection_string_show(
 
 def _get_hub_connection_string(
     cmd, discovery, hub, policy_name, key_type, show_all, default_eventhub,
-    hostname_type=HostnameType.classic.value,
+    hostname_type=HostnameType.CLASSIC.value,
 ):
 
     policies = []
