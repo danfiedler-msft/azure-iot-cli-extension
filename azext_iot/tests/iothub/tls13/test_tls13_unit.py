@@ -13,62 +13,75 @@ path_get_mgmt_client = "azure.cli.core.commands.client_factory.get_mgmt_service_
 class TestResolveHostnameByType:
     """Tests for _resolve_hostname_by_type in hub.py"""
 
-    default_hostname = "testhub.azure-devices.net"
-    hub_name = "testhub"
-    resource_group = "testrg"
-    location = "eastus"
+    def _make_target(self, device_hostname=None, service_hostname=None):
+        return {
+            "entity": "testhub.service.azure-devices.net",
+            "name": "testhub",
+            "deviceHostName": device_hostname,
+            "serviceHostName": service_hostname,
+        }
 
-    def _resolve(self, fixture_cmd, hostname_type):
+    def test_classic_returns_classic_hostname(self):
         from azext_iot.operations.hub import _resolve_hostname_by_type
-        return _resolve_hostname_by_type(
-            fixture_cmd, self.default_hostname, self.hub_name,
-            self.resource_group, hostname_type, self.location
-        )
+        target = self._make_target()
+        assert _resolve_hostname_by_type(target, HostnameType.classic.value) == "testhub.azure-devices.net"
 
-    def test_classic_returns_host_name(self, fixture_cmd):
-        result = self._resolve(fixture_cmd, HostnameType.classic.value)
-        assert result == "testhub.azure-devices.net"
+    def test_device_returns_device_hostname(self):
+        from azext_iot.operations.hub import _resolve_hostname_by_type
+        target = self._make_target(device_hostname="testhub.device.azure-devices.net")
+        assert _resolve_hostname_by_type(target, HostnameType.device.value) == "testhub.device.azure-devices.net"
 
-    def test_default_returns_classic(self, fixture_cmd):
-        """Default hostname_type is classic — should return classic hostname without any API call."""
-        result = self._resolve(fixture_cmd, HostnameType.classic.value)
-        assert result == "testhub.azure-devices.net"
-
-    def test_device_returns_device_hostname(self, mocker, fixture_cmd):
-        mocker.patch(path_fetch_tls, return_value={
-            "deviceHostName": "testhub.device.azure-devices.net",
-            "serviceHostName": "testhub.service.azure-devices.net",
-            "gatewayVersion": "V2",
-        })
-        result = self._resolve(fixture_cmd, HostnameType.device.value)
-        assert result == "testhub.device.azure-devices.net"
-
-    def test_service_returns_service_hostname(self, mocker, fixture_cmd):
-        mocker.patch(path_fetch_tls, return_value={
-            "deviceHostName": "testhub.device.azure-devices.net",
-            "serviceHostName": "testhub.service.azure-devices.net",
-            "gatewayVersion": "V2",
-        })
-        result = self._resolve(fixture_cmd, HostnameType.service.value)
+    def test_service_returns_service_hostname(self):
+        from azext_iot.operations.hub import _resolve_hostname_by_type
+        target = self._make_target(service_hostname="testhub.service.azure-devices.net")
+        result = _resolve_hostname_by_type(target, HostnameType.service.value)
         assert result == "testhub.service.azure-devices.net"
 
-    def test_gwv1_falls_back_to_classic(self, mocker, fixture_cmd):
-        mocker.patch(path_fetch_tls, return_value={
-            "deviceHostName": None,
-            "serviceHostName": None,
-            "gatewayVersion": None,
-        })
-        result = self._resolve(fixture_cmd, HostnameType.device.value)
-        assert result == "testhub.azure-devices.net"
+    def test_missing_device_hostname_raises_error(self):
+        import pytest
+        from azext_iot.operations.hub import _resolve_hostname_by_type
+        target = self._make_target()
+        with pytest.raises(Exception):
+            _resolve_hostname_by_type(target, HostnameType.device.value)
 
-    def test_gwv1_falls_back_with_v1_version(self, mocker, fixture_cmd):
-        mocker.patch(path_fetch_tls, return_value={
-            "deviceHostName": None,
-            "serviceHostName": None,
-            "gatewayVersion": "V1",
-        })
-        result = self._resolve(fixture_cmd, HostnameType.service.value)
-        assert result == "testhub.azure-devices.net"
+    def test_missing_service_hostname_raises_error(self):
+        import pytest
+        from azext_iot.operations.hub import _resolve_hostname_by_type
+        target = self._make_target()
+        with pytest.raises(Exception):
+            _resolve_hostname_by_type(target, HostnameType.service.value)
+
+
+class TestTransformHostname:
+    """Tests for _transform_hostname — string-based hostname transformation."""
+
+    def test_classic_to_classic(self):
+        from azext_iot.operations.hub import _transform_hostname
+        assert _transform_hostname("hub.azure-devices.net", HostnameType.classic.value) == "hub.azure-devices.net"
+
+    def test_classic_to_device(self):
+        from azext_iot.operations.hub import _transform_hostname
+        assert _transform_hostname("hub.azure-devices.net", HostnameType.device.value) == "hub.device.azure-devices.net"
+
+    def test_classic_to_service(self):
+        from azext_iot.operations.hub import _transform_hostname
+        assert _transform_hostname("hub.azure-devices.net", HostnameType.service.value) == "hub.service.azure-devices.net"
+
+    def test_service_to_device(self):
+        from azext_iot.operations.hub import _transform_hostname
+        assert _transform_hostname("hub.service.azure-devices.net", HostnameType.device.value) == "hub.device.azure-devices.net"
+
+    def test_device_to_service(self):
+        from azext_iot.operations.hub import _transform_hostname
+        assert _transform_hostname("hub.device.azure-devices.net", HostnameType.service.value) == "hub.service.azure-devices.net"
+
+    def test_device_to_classic(self):
+        from azext_iot.operations.hub import _transform_hostname
+        assert _transform_hostname("hub.device.azure-devices.net", HostnameType.classic.value) == "hub.azure-devices.net"
+
+    def test_service_to_classic(self):
+        from azext_iot.operations.hub import _transform_hostname
+        assert _transform_hostname("hub.service.azure-devices.net", HostnameType.classic.value) == "hub.azure-devices.net"
 
 
 class TestFetchTlsHostnames:

@@ -2402,11 +2402,10 @@ def _fetch_tls_hostnames(cmd, hub_name, resource_group_name, hub_location=None):
     from azure.cli.core.profiles import ResourceType
     from azure.core.rest import HttpRequest
 
+    empty = {"deviceHostName": None, "serviceHostName": None, "gatewayVersion": None}
     try:
         client = get_mgmt_service_client(cmd.cli_ctx, ResourceType.MGMT_IOTHUB)
         sub_id = client._config.subscription_id
-
-        # Use regional management endpoint for Canary regions, otherwise standard
         mgmt_host = "management.azure.com"
         if hub_location and hub_location.lower().endswith("euap"):
             mgmt_host = f"{hub_location}.management.azure.com"
@@ -2419,37 +2418,41 @@ def _fetch_tls_hostnames(cmd, hub_name, resource_group_name, hub_location=None):
         req = HttpRequest(method="GET", url=url, params={"api-version": IOTHUB_PREVIEW_API_VERSION})
         resp = client.iot_hub_resource._client.send_request(req)
         if resp.status_code >= 400:
-            return {"deviceHostName": None, "serviceHostName": None, "gatewayVersion": None}
-        data = resp.json()
-        props = data.get("properties", {})
-        gateway_version = props.get("iotHubDetails", {}).get("gatewayVersion")
+            return empty
+        props = resp.json().get("properties", {})
         return {
             "deviceHostName": props.get("deviceHostName"),
             "serviceHostName": props.get("serviceHostName"),
-            "gatewayVersion": gateway_version,
+            "gatewayVersion": props.get("iotHubDetails", {}).get("gatewayVersion"),
         }
     except Exception as e:
         logger.warning("Failed to fetch TLS 1.3 hostnames for '%s': %s", hub_name, str(e))
-        return {"deviceHostName": None, "serviceHostName": None, "gatewayVersion": None}
+        return empty
 
 
-def _resolve_hostname_by_type(cmd, default_hostname, hub_name, resource_group, hostname_type, hub_location=None):
-    """Resolve the appropriate hostname based on the hostname type."""
+def _transform_hostname(hostname, hostname_type):
+    """Transform a hostname to the requested type via string manipulation."""
+    hub_name = hostname.split(".")[0]
+    hostname_map = {
+        HostnameType.classic.value: f"{hub_name}.azure-devices.net",
+        HostnameType.device.value: f"{hub_name}.device.azure-devices.net",
+        HostnameType.service.value: f"{hub_name}.service.azure-devices.net",
+    }
+    return hostname_map.get(hostname_type, hostname)
+
+
+def _resolve_hostname_by_type(target, hostname_type):
+    classic = _transform_hostname(target["entity"], HostnameType.classic.value)
     if hostname_type == HostnameType.classic.value:
-        return default_hostname
-
-    tls_info = _fetch_tls_hostnames(cmd, hub_name, resource_group, hub_location)
-
-    if tls_info.get("gatewayVersion") != "V2":
-        logger.warning(
-            "IoT Hub '%s' is not a GWv2 hub. Falling back to classic hostname. "
-            "The 'device' and 'service' hostname types are only available on GWv2 IoT Hubs.",
-            hub_name,
+        return classic
+    key = "deviceHostName" if hostname_type == HostnameType.device.value else "serviceHostName"
+    resolved = target.get(key)
+    if not resolved:
+        raise InvalidArgumentValueError(
+            f"The '{hostname_type}' hostname is not available for IoT Hub '{target['name']}'. "
+            "This hostname type is only supported on GWv2 IoT Hubs."
         )
-        return default_hostname
-
-    hostname_key = "deviceHostName" if hostname_type == HostnameType.device.value else "serviceHostName"
-    return tls_info.get(hostname_key) or default_hostname
+    return resolved
 
 
 def _build_device_or_module_connection_string(entity, key_type="primary", hostname_override=None):
@@ -2503,12 +2506,10 @@ def iot_get_device_connection_string(
         auth_type=auth_type_dataplane,
     )
     device = _iot_device_show(target, device_id)
-    hostname_override = None
-    if hostname_type != HostnameType.classic.value:
-        hostname_override = _resolve_hostname_by_type(
-            cmd, target["entity"], target["name"], target["resourcegroup"],
-            hostname_type, target.get("location")
-        )
+    if login:
+        hostname_override = _transform_hostname(target["entity"], hostname_type)
+    else:
+        hostname_override = _resolve_hostname_by_type(target, hostname_type)
     result["connectionString"] = _build_device_or_module_connection_string(
         device, key_type, hostname_override=hostname_override
     )
@@ -2535,12 +2536,10 @@ def iot_get_module_connection_string(
         auth_type=auth_type_dataplane,
     )
     module = _iot_device_module_show(target, device_id, module_id)
-    hostname_override = None
-    if hostname_type != HostnameType.classic.value:
-        hostname_override = _resolve_hostname_by_type(
-            cmd, target["entity"], target["name"], target["resourcegroup"],
-            hostname_type, target.get("location")
-        )
+    if login:
+        hostname_override = _transform_hostname(target["entity"], hostname_type)
+    else:
+        hostname_override = _resolve_hostname_by_type(target, hostname_type)
     result["connectionString"] = _build_device_or_module_connection_string(
         module, key_type, hostname_override=hostname_override
     )
@@ -3023,10 +3022,7 @@ def _get_hub_connection_string(
             )
         ]
 
-    hostname = _resolve_hostname_by_type(
-        cmd, hub.properties.host_name, hub.name,
-        hub.additional_properties["resourcegroup"], hostname_type, hub.location
-    )
+    hostname = _transform_hostname(hub.properties.host_name, hostname_type)
     cs_template = "HostName={};SharedAccessKeyName={};SharedAccessKey={}"
     return [
         cs_template.format(
