@@ -80,6 +80,7 @@ class HostnameType(Enum):
     Type of hostname to use in connection strings.
     """
 
+    AUTO = "auto"
     CLASSIC = "classic"
     DEVICE = "device"
     SERVICE = "service"

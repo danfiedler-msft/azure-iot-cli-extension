@@ -353,12 +353,12 @@ def load_arguments(self, _):
         context.argument(
             "hostname_type",
             options_list=["--hostname-type", "--ht"],
-            arg_type=get_enum_type(["classic", "service"]),
-            default=HostnameType.CLASSIC.value,
+            arg_type=get_enum_type(["auto", "classic", "service"]),
+            default=HostnameType.AUTO.value,
             help="Type of hostname to use in the connection string. "
-            "'classic' uses the default hostname, "
-            "'service' uses the TLS 1.3 service hostname. "
-            "Only available on GWv2 IoT Hubs.",
+            "'auto' uses the TLS 1.3 service hostname on GWv2 hubs, classic otherwise. "
+            "'classic' always uses the default hostname. "
+            "'service' uses the TLS 1.3 service hostname (errors if not GWv2).",
         )
 
     for cs_command in [
@@ -369,12 +369,12 @@ def load_arguments(self, _):
             context.argument(
                 "hostname_type",
                 options_list=["--hostname-type", "--ht"],
-                arg_type=get_enum_type(["classic", "device"]),
-                default=HostnameType.CLASSIC.value,
+                arg_type=get_enum_type(["auto", "classic", "device"]),
+                default=HostnameType.AUTO.value,
                 help="Type of hostname to use in the connection string. "
-                "'classic' uses the default hostname, "
-                "'device' uses the TLS 1.3 device hostname. "
-                "Only available on GWv2 IoT Hubs.",
+                "'auto' uses the TLS 1.3 device hostname on GWv2 hubs, classic otherwise. "
+                "'classic' always uses the default hostname. "
+                "'device' uses the TLS 1.3 device hostname (errors if not GWv2).",
             )
 
     with self.argument_context("iot hub job") as context:

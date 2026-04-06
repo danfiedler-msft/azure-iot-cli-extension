@@ -19,10 +19,9 @@ from azure.cli.command_modules.iot.shared import (EndpointType,
                                                   RenewKeyType,
                                                   AuthenticationType)
 
-from azext_iot.sdk.dps.mgmt.models import IotDpsSku, AccessRightsDescription
 
-from azext_iot.sdk.iothub.mgmt.models import IotHubSku
 from .custom import KeyType, SimpleAccessRights
+from .shared import IotDpsSku, IotHubSku, AccessRightsDescription
 from azure.cli.command_modules.iot._validators import (validate_policy_permissions,
                                                        validate_retention_days,
                                                        validate_fileupload_notification_max_delivery_count,
