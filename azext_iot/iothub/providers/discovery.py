@@ -13,7 +13,6 @@ from azext_iot.common.utility import trim_from_start
 from azext_iot.iothub.models.iothub_target import IotHubTarget
 from azext_iot._factory import iot_hub_service_factory
 from typing import Any, Dict
-from enum import Enum, EnumMeta
 
 logger = get_logger(__name__)
 PRIVILEDGED_ACCESS_RIGHTS_SET = set(
@@ -72,46 +71,45 @@ class IotHubDiscovery(BaseDiscovery):
         # but that will be better served aligning with vNext pattern for Iot Hub
 
         include_events = kwargs.get("include_events", False)
-        classic_hostname = resource.properties.host_name
-        rg = getattr(resource, 'resourcegroup', None) or resource.additional_properties.get("resourcegroup")
+        rg = resource.get("resourcegroup")
 
-        # TODO: Remove _fetch_tls_hostnames once SDK uses 2026-03-01-preview —
-        # resource will have serviceHostName natively from client.get().
-        from azext_iot.operations.hub import _fetch_tls_hostnames
-        tls_info = _fetch_tls_hostnames(self.cmd, resource.name, rg, resource.location)
-        service_hostname = tls_info.get("serviceHostName") if tls_info.get("gatewayVersion") == "V2" else None
-        hostname = service_hostname or classic_hostname
+        props = resource.get("properties", {})
+        tls_device = props.get("deviceHostName")
+        tls_service = props.get("serviceHostName")
+        gw_version = props.get("iotHubDetails", {}).get("gatewayVersion") if props.get("iotHubDetails") else None
+        service_hostname = tls_service if gw_version == "V2" else None
+        hostname = service_hostname or props.get("hostName")
 
         target = {}
         target["cs"] = IOT_SERVICE_CS_TEMPLATE.format(
             hostname,
-            policy.key_name,
-            policy.primary_key if key_type == "primary" else policy.secondary_key,
+            policy["keyName"],
+            policy["primaryKey"] if key_type == "primary" else policy["secondaryKey"],
         )
         target["entity"] = hostname
-        target["name"] = resource.name
-        target["policy"] = policy.key_name
-        target["primarykey"] = policy.primary_key
-        target["secondarykey"] = policy.secondary_key
+        target["name"] = resource["name"]
+        target["policy"] = policy["keyName"]
+        target["primarykey"] = policy["primaryKey"]
+        target["secondarykey"] = policy["secondaryKey"]
         target["subscription"] = self.sub_id
         target["resourcegroup"] = rg
-        target["location"] = resource.location
-        target["sku_tier"] = resource.sku.tier.value if isinstance(resource.sku.tier, (Enum, EnumMeta)) else resource.sku.tier
-        target["deviceHostName"] = tls_info.get("deviceHostName")
-        target["serviceHostName"] = tls_info.get("serviceHostName")
+        target["location"] = resource["location"]
+        target["sku_tier"] = resource["sku"]["tier"]
+        target["deviceHostName"] = tls_device
+        target["serviceHostName"] = tls_service
 
         if include_events:
             events = {}
             events["endpoint"] = trim_from_start(
-                resource.properties.event_hub_endpoints["events"].endpoint, "sb://"
+                resource["properties"]["eventHubEndpoints"]["events"]["endpoint"], "sb://"
             ).strip("/")
-            events["partition_count"] = resource.properties.event_hub_endpoints[
+            events["partition_count"] = resource["properties"]["eventHubEndpoints"][
                 "events"
-            ].partition_count
-            events["path"] = resource.properties.event_hub_endpoints["events"].path
-            events["partition_ids"] = resource.properties.event_hub_endpoints[
+            ]["partitionCount"]
+            events["path"] = resource["properties"]["eventHubEndpoints"]["events"]["path"]
+            events["partition_ids"] = resource["properties"]["eventHubEndpoints"][
                 "events"
-            ].partition_ids
+            ]["partitionIds"]
             target["events"] = events
 
         target["cmd"] = self.cmd

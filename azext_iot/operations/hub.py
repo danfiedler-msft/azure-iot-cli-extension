@@ -6,7 +6,6 @@
 
 from os.path import exists
 from knack.log import get_logger
-from enum import Enum, EnumMeta
 from tqdm import tqdm
 from azure.cli.core.azclierror import (
     ArgumentUsageError,
@@ -20,7 +19,6 @@ from azure.cli.core.azclierror import (
 )
 from azext_iot.constants import (
     DEVICE_DEVICESCOPE_PREFIX,
-    IOTHUB_PREVIEW_API_VERSION,
     IOTHUB_RENEW_KEY_BATCH_SIZE,
     IOTHUB_THROTTLE_MAX_TRIES,
     IOTHUB_THROTTLE_SLEEP_SEC,
@@ -2396,40 +2394,6 @@ def _iot_build_sas_token(
     return SasTokenAuthentication(uri, policy, key, duration)
 
 
-def _fetch_tls_hostnames(cmd, hub_name, resource_group_name, hub_location=None):
-    """Fetch TLS 1.3 hostnames from IoT Hub using the 2026-03-01-preview API."""
-    from azure.cli.core.commands.client_factory import get_mgmt_service_client
-    from azure.cli.core.profiles import ResourceType
-    from azure.core.rest import HttpRequest
-
-    empty = {"deviceHostName": None, "serviceHostName": None, "gatewayVersion": None}
-    try:
-        client = get_mgmt_service_client(cmd.cli_ctx, ResourceType.MGMT_IOTHUB)
-        sub_id = client._config.subscription_id
-        mgmt_host = "management.azure.com"
-        if hub_location and hub_location.lower().endswith("euap"):
-            mgmt_host = f"{hub_location}.management.azure.com"
-
-        url = (
-            f"https://{mgmt_host}/subscriptions/{sub_id}"
-            f"/resourceGroups/{resource_group_name}"
-            f"/providers/Microsoft.Devices/IotHubs/{hub_name}"
-        )
-        req = HttpRequest(method="GET", url=url, params={"api-version": IOTHUB_PREVIEW_API_VERSION})
-        resp = client.iot_hub_resource._client.send_request(req)
-        if resp.status_code >= 400:
-            return empty
-        props = resp.json().get("properties", {})
-        return {
-            "deviceHostName": props.get("deviceHostName"),
-            "serviceHostName": props.get("serviceHostName"),
-            "gatewayVersion": props.get("iotHubDetails", {}).get("gatewayVersion"),
-        }
-    except Exception as e:
-        logger.warning("Failed to fetch TLS 1.3 hostnames for '%s': %s", hub_name, str(e))
-        return empty
-
-
 def _transform_hostname(hostname, hostname_type):
     """Transform a hostname to the requested type via string manipulation."""
     parts = hostname.split(".")
@@ -2955,11 +2919,11 @@ def iot_hub_connection_string_show(
 
         connection_strings = []
         for hub in hubs:
-            if hub.properties.state == IoTHubStateType.Active.value:
+            if hub["properties"]["state"] == IoTHubStateType.Active.value:
                 try:
                     connection_strings.append(
                         {
-                            "name": hub.name,
+                            "name": hub["name"],
                             "connectionString": conn_str_getter(hub)
                             if show_all
                             else conn_str_getter(hub)[0],
@@ -2967,14 +2931,14 @@ def iot_hub_connection_string_show(
                     )
                 except Exception:
                     logger.warning(
-                        f"Warning: The IoT Hub {hub.name} in resource group "
-                        + f"{hub.additional_properties['resourcegroup']} does "
+                        f"Warning: The IoT Hub {hub['name']} in resource group "
+                        + f"{hub['resourcegroup']} does "
                         + f"not have the target policy {policy_name}."
                     )
             else:
                 logger.warning(
-                    f"Warning: The IoT Hub {hub.name} in resource group "
-                    + f"{hub.additional_properties['resourcegroup']} is skipped "
+                    f"Warning: The IoT Hub {hub['name']} in resource group "
+                    + f"{hub['resourcegroup']} is skipped "
                     + "because the hub is not active."
                 )
         return connection_strings
@@ -2995,45 +2959,43 @@ def _get_hub_connection_string(
     policies = []
     if show_all:
         policies.extend(
-            discovery.get_policies(hub.name, hub.additional_properties["resourcegroup"])
+            discovery.get_policies(hub["name"], hub["resourcegroup"])
         )
     else:
         policies.append(
             discovery.find_policy(
-                hub.name, hub.additional_properties["resourcegroup"], policy_name
+                hub["name"], hub["resourcegroup"], policy_name
             )
         )
     if default_eventhub:
         cs_template_eventhub = (
             "Endpoint={};SharedAccessKeyName={};SharedAccessKey={};EntityPath={}"
         )
-        endpoint = hub.properties.event_hub_endpoints["events"].endpoint
-        entityPath = hub.properties.event_hub_endpoints["events"].path
+        endpoint = hub["properties"]["eventHubEndpoints"]["events"]["endpoint"]
+        entityPath = hub["properties"]["eventHubEndpoints"]["events"]["path"]
         return [
             cs_template_eventhub.format(
                 endpoint,
-                p.key_name,
-                p.secondary_key
+                p["keyName"],
+                p["secondaryKey"]
                 if key_type == KeyType.secondary.value
-                else p.primary_key,
+                else p["primaryKey"],
                 entityPath,
             )
             for p in policies
             if "serviceconnect"
             in (
-                p.rights.value.lower()
-                if isinstance(p.rights, (Enum, EnumMeta))
-                else p.rights.lower()
+                p["rights"].lower()
             )
         ]
 
-    hostname = _transform_hostname(hub.properties.host_name, hostname_type)
+    hostname = _transform_hostname(hub["properties"]["hostName"], hostname_type)
     cs_template = "HostName={};SharedAccessKeyName={};SharedAccessKey={}"
     return [
         cs_template.format(
             hostname,
-            p.key_name,
-            p.secondary_key if key_type == KeyType.secondary.value else p.primary_key,
+            p["keyName"],
+            p["secondaryKey"] if key_type == KeyType.secondary.value else p["primaryKey"],
         )
         for p in policies
     ]
@@ -3056,8 +3018,8 @@ def _iot_hub_distributed_tracing_show(discovery, target, device_id):
 def _validate_device_tracing(discovery, target, device_twin):
     if not all([target.get("location"), target.get("sku_tier")]):
         resource = discovery.find_resource(target["name"])
-        target["location"] = resource.location
-        target["sku_tier"] = resource.sku.tier.value if isinstance(resource.sku.tier, (Enum, EnumMeta)) else resource.sku.tier
+        target["location"] = resource["location"]
+        target["sku_tier"] = resource["sku"]["tier"]
     if target["location"].lower() not in TRACING_ALLOWED_FOR_LOCATION:
         raise ClientRequestError(
             'Distributed tracing isn\'t supported for the hub located at "{}" location.'.format(

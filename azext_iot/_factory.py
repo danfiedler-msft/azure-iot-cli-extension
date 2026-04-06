@@ -56,6 +56,12 @@ def _get_credential_scopes(cli_ctx):
     return resource_to_scopes(cli_ctx.cloud.endpoints.active_directory_resource_id)
 
 
+def _get_arm_endpoint(cli_ctx):
+    """TODO: Revert to cli_ctx.cloud.endpoints.resource_manager once 2026-03-01-preview
+    is registered globally in ARM for all regions."""
+    return "https://eastus2euap.management.azure.com"
+
+
 def iot_hub_service_factory(cli_ctx, *_):
     """
     Factory for importing deps and getting service client resources.
@@ -77,7 +83,7 @@ def iot_hub_service_factory(cli_ctx, *_):
     return IotHubClient(
         credential=AZURE_CLI_CREDENTIAL,
         subscription_id=subscription_id,
-        endpoint=cli_ctx.cloud.endpoints.resource_manager,
+        endpoint=_get_arm_endpoint(cli_ctx),
         credential_scopes=_get_credential_scopes(cli_ctx),
         user_agent_policy=UserAgentPolicy(user_agent=USER_AGENT),
         http_logging_policy=_get_default_logging_policy(),
@@ -105,7 +111,7 @@ def iot_service_provisioning_factory(cli_ctx, *_):
     return IotDpsClient(
         credential=AZURE_CLI_CREDENTIAL,
         subscription_id=subscription_id,
-        endpoint=cli_ctx.cloud.endpoints.resource_manager,
+        endpoint=_get_arm_endpoint(cli_ctx),
         credential_scopes=_get_credential_scopes(cli_ctx),
         user_agent_policy=UserAgentPolicy(user_agent=USER_AGENT),
         http_logging_policy=_get_default_logging_policy(),
