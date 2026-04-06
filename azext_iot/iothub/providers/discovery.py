@@ -76,7 +76,7 @@ class IotHubDiscovery(BaseDiscovery):
         props = resource.get("properties", {})
         tls_device = props.get("deviceHostName")
         tls_service = props.get("serviceHostName")
-        gw_version = props.get("iotHubDetails", {}).get("gatewayVersion") if props.get("iotHubDetails") else None
+        gw_version = props.get("iotHubDetails", {}).get("gatewayVersion")
         service_hostname = tls_service if gw_version == "V2" else None
         hostname = service_hostname or props.get("hostName")
 

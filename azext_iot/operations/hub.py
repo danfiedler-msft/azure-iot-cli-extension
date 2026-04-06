@@ -2410,10 +2410,12 @@ def _transform_hostname(hostname, hostname_type):
     return hostname_map.get(hostname_type, hostname)
 
 
-def _resolve_hostname_by_type(target, hostname_type):
+def _resolve_hostname_by_type(target, hostname_type, auto_tls_key="deviceHostName"):
     classic = _transform_hostname(target["entity"], HostnameType.CLASSIC.value)
     if hostname_type == HostnameType.CLASSIC.value:
         return classic
+    if hostname_type == HostnameType.AUTO.value:
+        return target.get(auto_tls_key) or classic
     key = "deviceHostName" if hostname_type == HostnameType.DEVICE.value else "serviceHostName"
     resolved = target.get(key)
     if not resolved:
@@ -2464,7 +2466,7 @@ def iot_get_device_connection_string(
     resource_group_name=None,
     login=None,
     auth_type_dataplane=None,
-    hostname_type=HostnameType.CLASSIC.value,
+    hostname_type=HostnameType.AUTO.value,
 ):
     result = {}
     discovery = IotHubDiscovery(cmd)
@@ -2478,7 +2480,7 @@ def iot_get_device_connection_string(
     if login:
         hostname_override = _transform_hostname(target["entity"], hostname_type)
     else:
-        hostname_override = _resolve_hostname_by_type(target, hostname_type)
+        hostname_override = _resolve_hostname_by_type(target, hostname_type, auto_tls_key="deviceHostName")
     result["connectionString"] = _build_device_or_module_connection_string(
         device, key_type, hostname_override=hostname_override
     )
@@ -2494,7 +2496,7 @@ def iot_get_module_connection_string(
     resource_group_name=None,
     login=None,
     auth_type_dataplane=None,
-    hostname_type=HostnameType.CLASSIC.value,
+    hostname_type=HostnameType.AUTO.value,
 ):
     result = {}
     discovery = IotHubDiscovery(cmd)
@@ -2508,7 +2510,7 @@ def iot_get_module_connection_string(
     if login:
         hostname_override = _transform_hostname(target["entity"], hostname_type)
     else:
-        hostname_override = _resolve_hostname_by_type(target, hostname_type)
+        hostname_override = _resolve_hostname_by_type(target, hostname_type, auto_tls_key="deviceHostName")
     result["connectionString"] = _build_device_or_module_connection_string(
         module, key_type, hostname_override=hostname_override
     )
@@ -2903,7 +2905,7 @@ def iot_hub_connection_string_show(
     key_type=KeyType.primary.value,
     show_all=False,
     default_eventhub=False,
-    hostname_type=HostnameType.CLASSIC.value,
+    hostname_type=HostnameType.AUTO.value,
 ):
     discovery = IotHubDiscovery(cmd)
 
@@ -2953,7 +2955,7 @@ def iot_hub_connection_string_show(
 
 def _get_hub_connection_string(
     cmd, discovery, hub, policy_name, key_type, show_all, default_eventhub,
-    hostname_type=HostnameType.CLASSIC.value,
+    hostname_type=HostnameType.AUTO.value,
 ):
 
     policies = []
@@ -2989,7 +2991,10 @@ def _get_hub_connection_string(
             )
         ]
 
-    hostname = _transform_hostname(hub["properties"]["hostName"], hostname_type)
+    if hostname_type == HostnameType.AUTO.value:
+        hostname = hub["properties"].get("serviceHostName") or hub["properties"]["hostName"]
+    else:
+        hostname = _transform_hostname(hub["properties"]["hostName"], hostname_type)
     cs_template = "HostName={};SharedAccessKeyName={};SharedAccessKey={}"
     return [
         cs_template.format(
