@@ -99,12 +99,7 @@ def _enum_to_str(value):
     if isinstance(value, Enum):
         return value.value
     s = str(value)
-    return s.split(".")[-1] if "." in s else s
-
-
-def _strip_none(d):
-    """Remove None values from a dict for modelless SDK serialization."""
-    return {k: v for k, v in d.items() if v is not None}
+    return s.rsplit(".", maxsplit=1)[-1] if "." in s else s
 
 
 def iot_dps_create(
@@ -129,9 +124,9 @@ def iot_dps_create(
     cli_ctx = cmd.cli_ctx
     _check_dps_name_availability(client.iot_dps_resource, dps_name)
     location = _ensure_location(cli_ctx, resource_group_name, location)
-    dps_property = {}
-    if enable_data_residency is not None:
-        dps_property["enableDataResidency"] = enable_data_residency
+    dps_property = {
+        "enableDataResidency": enable_data_residency,
+    }
 
     # TODO - CMS Preview - DPS ADR properties
     if adr_ns_id:
@@ -149,11 +144,10 @@ def iot_dps_create(
     sku_name = _enum_to_str(sku)
     dps_description = {
         "location": location,
-        "properties": _strip_none(dps_property),
+        "properties": dps_property,
         "sku": {"name": sku_name, "capacity": unit},
+        "tags": tags,
     }
-    if tags:
-        dps_description["tags"] = tags
 
     if mi_system_assigned is not None or mi_user_assigned:
         dps_description["identity"] = _construct_identity_info(mi_system_assigned, mi_user_assigned)
@@ -749,15 +743,15 @@ def iot_hub_create(
                                                 "ttlAsIso8601": timedelta(hours=fileupload_notification_ttl),
                                                 "lockDurationAsIso8601": timedelta(seconds=fileupload_notification_lock_duration)}
     storage_endpoint_dic = {}
-    storage_endpoint_dic['$default'] = _strip_none({
+    storage_endpoint_dic['$default'] = {
         "sasTtlAsIso8601": timedelta(hours=fileupload_sas_ttl),
         "connectionString": fileupload_storage_connectionstring or '',
         "containerName": fileupload_storage_container_name or '',
         "authenticationType": _enum_to_str(fileupload_storage_authentication_type) if fileupload_storage_authentication_type else None,
         "identity": {"userAssignedIdentity": fileupload_storage_identity} if fileupload_storage_identity else None,
-    })
+    }
 
-    properties = _strip_none({
+    properties = {
         "eventHubEndpoints": event_hub_dic,
         "messagingEndpoints": msg_endpoint_dic,
         "storageEndpoints": storage_endpoint_dic,
@@ -767,7 +761,7 @@ def iot_hub_create(
         "disableLocalAuth": disable_local_auth,
         "disableDeviceSAS": disable_device_sas,
         "disableModuleSAS": disable_module_sas,
-    })
+    }
     properties["enableFileUploadNotifications"] = enable_fileupload_notifications
 
     # TODO - CMS Preview - Hub Create ADR property validation
@@ -778,12 +772,12 @@ def iot_hub_create(
         adr_identity_resource_id=adr_ns_identity_id
     )
 
-    hub_description = _strip_none({
+    hub_description = {
         "location": location,
         "sku": sku,
         "properties": properties,
         "tags": tags,
-    })
+    }
     if (system_identity or user_identities):
         hub_description["identity"] = _build_identity(system=bool(system_identity), identities=user_identities)
     if bool(identity_role) ^ bool(identity_scopes):

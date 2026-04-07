@@ -32,9 +32,15 @@ iot dps enrollment update:
     auth_type_dataplane:
       rule_exclusions:
         - no_parameter_defaults_for_update_commands
+    hostname_type:
+      rule_exclusions:
+        - no_parameter_defaults_for_update_commands
 iot dps enrollment-group update:
   parameters:
     auth_type_dataplane:
+      rule_exclusions:
+        - no_parameter_defaults_for_update_commands
+    hostname_type:
       rule_exclusions:
         - no_parameter_defaults_for_update_commands
 iot hub configuration update:
@@ -318,15 +324,5 @@ iot adr ns policy update:
       rule_exclusions:
         - no_parameter_defaults_for_update_commands
     certificate_validity_days:
-      rule_exclusions:
-        - no_parameter_defaults_for_update_commands
-iot dps enrollment update:
-  parameters:
-    hostname_type:
-      rule_exclusions:
-        - no_parameter_defaults_for_update_commands
-iot dps enrollment-group update:
-  parameters:
-    hostname_type:
       rule_exclusions:
         - no_parameter_defaults_for_update_commands
