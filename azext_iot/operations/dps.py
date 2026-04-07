@@ -21,12 +21,14 @@ from azext_iot.common.shared import (
     ReprovisionType,
     AllocationType,
     KeyType,
-    IoTDPSStateType
+    IoTDPSStateType,
+    HostnameType,
 )
 from azext_iot.common.utility import compute_device_key, handle_service_exception, shell_safe_json_parse
 from azext_iot.common.certops import open_certificate
 from azext_iot.dps.providers.discovery import DPSDiscovery
 from azext_iot.operations.generic import _execute_query
+from azext_iot.operations.hub import _transform_hostname
 from azext_iot._factory import SdkResolver
 from azext_iot.sdk.dps.service.models import (
     IndividualEnrollment,
@@ -54,6 +56,53 @@ def _get_dps_resource_group(dps):
     return getattr(dps, "resourcegroup", None) or dps.additional_properties.get("resourcegroup")
 
 
+def _transform_enrollment_hub_hostnames(result, hostname_type=HostnameType.AUTO.value):
+    """
+    Transform IoT Hub hostnames in enrollment result to the requested type.
+    """
+    if not result:
+        return result
+
+    if hostname_type == HostnameType.AUTO.value:
+        hostname_type = HostnameType.DEVICE.value
+
+    if isinstance(result, list):
+        return [_transform_enrollment_hub_hostnames(item, hostname_type) for item in result]
+
+    if isinstance(result, dict):
+        if result.get("iotHubs"):
+            result["iotHubs"] = [
+                _transform_hostname(h, hostname_type) for h in result["iotHubs"]
+            ]
+    else:
+        if getattr(result, "iot_hubs", None):
+            result.iot_hubs = [
+                _transform_hostname(h, hostname_type) for h in result.iot_hubs
+            ]
+
+    return result
+
+
+def _transform_registration_hub_hostname(result, hostname_type=HostnameType.AUTO.value):
+    """
+    Transform assignedHub hostname in registration state result to the requested type.
+    """
+    if not result:
+        return result
+
+    if hostname_type == HostnameType.AUTO.value:
+        hostname_type = HostnameType.DEVICE.value
+
+    if isinstance(result, list):
+        return [_transform_registration_hub_hostname(item, hostname_type) for item in result]
+
+    if isinstance(result, dict):
+        if result.get("assignedHub"):
+            result["assignedHub"] = _transform_hostname(result["assignedHub"], hostname_type)
+
+    return result
+
+
 # DPS Enrollments
 
 
@@ -62,6 +111,7 @@ def iot_dps_device_enrollment_list(
     dps_name=None,
     resource_group_name=None,
     top=None,
+    hostname_type=None,
     login=None,
     auth_type_dataplane=None,
 ):
@@ -81,7 +131,8 @@ def iot_dps_device_enrollment_list(
 
         query_command = "SELECT *"
         query = [QuerySpecification(query=query_command)]
-        return _execute_query(query, sdk.individual_enrollment.query, top)
+        result = _execute_query(query, sdk.individual_enrollment.query, top)
+        return _transform_enrollment_hub_hostnames(result, hostname_type)
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
 
@@ -92,6 +143,7 @@ def iot_dps_device_enrollment_get(
     dps_name=None,
     resource_group_name=None,
     show_keys=None,
+    hostname_type=None,
     login=None,
     auth_type_dataplane=None,
 ):
@@ -123,7 +175,7 @@ def iot_dps_device_enrollment_get(
                         enrollment_type
                     )
                 )
-        return enrollment
+        return _transform_enrollment_hub_hostnames(enrollment, hostname_type)
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
 
@@ -151,6 +203,7 @@ def iot_dps_device_enrollment_create(
     webhook_url=None,
     device_information=None,
     credential_policy_name=None,
+    hostname_type=None,
     api_version=None,
     login=None,
     auth_type_dataplane=None,
@@ -215,7 +268,8 @@ def iot_dps_device_enrollment_create(
             optional_device_information=_get_twin_collection(device_information),
             credential_policy_name=credential_policy_name
         )
-        return sdk.individual_enrollment.create_or_update(enrollment_id, enrollment)
+        result = sdk.individual_enrollment.create_or_update(enrollment_id, enrollment)
+        return _transform_enrollment_hub_hostnames(result, hostname_type)
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
 
@@ -245,6 +299,7 @@ def iot_dps_device_enrollment_update(
     webhook_url=None,
     device_information=None,
     credential_policy_name=None,
+    hostname_type=None,
     api_version=None,
     login=None,
     auth_type_dataplane=None,
@@ -341,8 +396,11 @@ def iot_dps_device_enrollment_update(
         if credential_policy_name is not None:
             enrollment_record.credential_policy_name = credential_policy_name
 
-        return sdk.individual_enrollment.create_or_update(
-            enrollment_id, enrollment_record, if_match=(etag if etag else "*")
+        return _transform_enrollment_hub_hostnames(
+            sdk.individual_enrollment.create_or_update(
+                enrollment_id, enrollment_record, if_match=(etag if etag else "*")
+            ),
+            hostname_type,
         )
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
@@ -377,7 +435,8 @@ def iot_dps_device_enrollment_delete(
 
 
 def iot_dps_device_enrollment_group_list(
-    cmd, dps_name=None, resource_group_name=None, top=None, login=None, auth_type_dataplane=None,
+    cmd, dps_name=None, resource_group_name=None, top=None, hostname_type=None,
+    login=None, auth_type_dataplane=None,
 ):
     from azext_iot.sdk.dps.service.models import QuerySpecification
 
@@ -394,7 +453,8 @@ def iot_dps_device_enrollment_group_list(
 
         query_command = "SELECT *"
         query1 = [QuerySpecification(query=query_command)]
-        return _execute_query(query1, sdk.enrollment_group.query, top)
+        result = _execute_query(query1, sdk.enrollment_group.query, top)
+        return _transform_enrollment_hub_hostnames(result, hostname_type)
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
 
@@ -405,6 +465,7 @@ def iot_dps_device_enrollment_group_get(
     dps_name=None,
     resource_group_name=None,
     show_keys=None,
+    hostname_type=None,
     login=None,
     auth_type_dataplane=None,
 ):
@@ -436,7 +497,7 @@ def iot_dps_device_enrollment_group_get(
                         enrollment_type
                     )
                 )
-        return enrollment_group
+        return _transform_enrollment_hub_hostnames(enrollment_group, hostname_type)
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
 
@@ -462,6 +523,7 @@ def iot_dps_device_enrollment_group_create(
     edge_enabled=False,
     webhook_url=None,
     credential_policy_name=None,
+    hostname_type=None,
     api_version=None,
     login=None,
     auth_type_dataplane=None,
@@ -531,7 +593,8 @@ def iot_dps_device_enrollment_group_create(
             custom_allocation_definition=custom_allocation_definition,
             credential_policy_name=credential_policy_name
         )
-        return sdk.enrollment_group.create_or_update(enrollment_id, group_enrollment)
+        result = sdk.enrollment_group.create_or_update(enrollment_id, group_enrollment)
+        return _transform_enrollment_hub_hostnames(result, hostname_type)
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
 
@@ -560,6 +623,7 @@ def iot_dps_device_enrollment_group_update(
     edge_enabled=None,
     webhook_url=None,
     credential_policy_name=None,
+    hostname_type=None,
     api_version=None,
     login=None,
     auth_type_dataplane=None,
@@ -671,8 +735,11 @@ def iot_dps_device_enrollment_group_update(
             enrollment_record.capabilities = DeviceCapabilities(iot_edge=edge_enabled)
         if credential_policy_name is not None:
             enrollment_record.credential_policy_name = credential_policy_name
-        return sdk.enrollment_group.create_or_update(
-            enrollment_id, enrollment_record, if_match=(etag if etag else "*")
+        return _transform_enrollment_hub_hostnames(
+            sdk.enrollment_group.create_or_update(
+                enrollment_id, enrollment_record, if_match=(etag if etag else "*")
+            ),
+            hostname_type,
         )
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
@@ -843,6 +910,7 @@ def iot_dps_registration_list(
     dps_name=None,
     resource_group_name=None,
     top=None,
+    hostname_type=None,
     login=None,
     auth_type_dataplane=None,
 ):
@@ -856,13 +924,15 @@ def iot_dps_registration_list(
     try:
         resolver = SdkResolver(target=target)
         sdk = resolver.get_sdk(SdkType.dps_sdk)
-        return _execute_query([enrollment_id], sdk.device_registration_state.query, top)
+        result = _execute_query([enrollment_id], sdk.device_registration_state.query, top)
+        return _transform_registration_hub_hostname(result, hostname_type)
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
 
 
 def iot_dps_registration_get(
-    cmd, registration_id, dps_name=None, resource_group_name=None, login=None, auth_type_dataplane=None,
+    cmd, registration_id, dps_name=None, resource_group_name=None,
+    hostname_type=None, login=None, auth_type_dataplane=None,
 ):
     discovery = DPSDiscovery(cmd)
     target = discovery.get_target(
@@ -875,9 +945,10 @@ def iot_dps_registration_get(
         resolver = SdkResolver(target=target)
         sdk = resolver.get_sdk(SdkType.dps_sdk)
 
-        return sdk.device_registration_state.get(
+        result = sdk.device_registration_state.get(
             registration_id, raw=True
         ).response.json()
+        return _transform_registration_hub_hostname(result, hostname_type)
     except ProvisioningServiceErrorDetailsException as e:
         handle_service_exception(e)
 

@@ -652,7 +652,7 @@ class TestEnrollmentDelete():
 
 
 def generate_registration_state_show():
-    payload = {'registrationId': enrollment_id, 'status': 'assigned', 'etag': etag, 'assignedHub': 'myHub',
+    payload = {'registrationId': enrollment_id, 'status': 'assigned', 'etag': etag, 'assignedHub': 'myHub.azure-devices.net',
                'deviceId': 'myDevice'}
     return payload
 

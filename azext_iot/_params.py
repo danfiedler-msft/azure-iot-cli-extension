@@ -1158,6 +1158,16 @@ def load_arguments(self, _):
             help="ADR Namespace Credential Policy Name.",
             arg_group="ADR Credential Policy"
         )
+        context.argument(
+            "hostname_type",
+            options_list=["--hostname-type", "--ht"],
+            arg_type=get_enum_type(["auto", "classic", "device"]),
+            default=HostnameType.AUTO.value,
+            help="Type of IoT Hub hostname to show in enrollment results. "
+            "'auto' uses the TLS 1.3 device hostname (default). "
+            "'classic' uses the default hostname. "
+            "'device' uses the TLS 1.3 device hostname.",
+        )
 
     with self.argument_context("iot dps enrollment create") as context:
         context.argument(
@@ -1211,6 +1221,16 @@ def load_arguments(self, _):
             "registration_id",
             options_list=["--enrollment-id", "--eid"],
             help="Individual device enrollment ID."
+        )
+        context.argument(
+            "hostname_type",
+            options_list=["--hostname-type", "--ht"],
+            arg_type=get_enum_type(["auto", "classic", "device"]),
+            default=HostnameType.AUTO.value,
+            help="Type of IoT Hub hostname to show in registration results. "
+            "'auto' uses the TLS 1.3 device hostname (default). "
+            "'classic' uses the default hostname. "
+            "'device' uses the TLS 1.3 device hostname.",
         )
 
     with self.argument_context("iot dps enrollment-group") as context:
@@ -1270,6 +1290,16 @@ def load_arguments(self, _):
             help="ADR Namespace Credential Policy Name.",
             arg_group="ADR Credential Policy"
         )
+        context.argument(
+            "hostname_type",
+            options_list=["--hostname-type", "--ht"],
+            arg_type=get_enum_type(["auto", "classic", "device"]),
+            default=HostnameType.AUTO.value,
+            help="Type of IoT Hub hostname to show in enrollment group results. "
+            "'auto' uses the TLS 1.3 device hostname (default). "
+            "'classic' uses the default hostname. "
+            "'device' uses the TLS 1.3 device hostname.",
+        )
 
     with self.argument_context("iot dps enrollment-group show") as context:
         context.argument(
@@ -1291,6 +1321,18 @@ def load_arguments(self, _):
 
     with self.argument_context("iot dps registration") as context:
         context.argument("registration_id", help="ID of device registration.")
+
+    with self.argument_context("iot dps enrollment-group registration") as context:
+        context.argument(
+            "hostname_type",
+            options_list=["--hostname-type", "--ht"],
+            arg_type=get_enum_type(["auto", "classic", "device"]),
+            default=HostnameType.AUTO.value,
+            help="Type of IoT Hub hostname to show in registration results. "
+            "'auto' uses the TLS 1.3 device hostname (default). "
+            "'classic' uses the default hostname. "
+            "'device' uses the TLS 1.3 device hostname.",
+        )
 
     with self.argument_context("iot dps registration list") as context:
         context.argument(
