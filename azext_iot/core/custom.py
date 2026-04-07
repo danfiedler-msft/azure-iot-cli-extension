@@ -124,9 +124,7 @@ def iot_dps_create(
     cli_ctx = cmd.cli_ctx
     _check_dps_name_availability(client.iot_dps_resource, dps_name)
     location = _ensure_location(cli_ctx, resource_group_name, location)
-    dps_property = {
-        "enableDataResidency": enable_data_residency,
-    }
+    dps_property = {"enableDataResidency": enable_data_residency}
 
     # TODO - CMS Preview - DPS ADR properties
     if adr_ns_id:
@@ -141,11 +139,10 @@ def iot_dps_create(
             "Device Registry namespace id (--ns-resource-id) is required when specifying namespace user identity."
         )
 
-    sku_name = _enum_to_str(sku)
     dps_description = {
         "location": location,
         "properties": dps_property,
-        "sku": {"name": sku_name, "capacity": unit},
+        "sku": {"name": _enum_to_str(sku), "capacity": unit},
         "tags": tags,
     }
 
