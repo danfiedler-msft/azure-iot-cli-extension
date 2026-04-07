@@ -1321,6 +1321,16 @@ def load_arguments(self, _):
 
     with self.argument_context("iot dps registration") as context:
         context.argument("registration_id", help="ID of device registration.")
+        context.argument(
+            "hostname_type",
+            options_list=["--hostname-type", "--ht"],
+            arg_type=get_enum_type(["auto", "classic", "device"]),
+            default=HostnameType.AUTO.value,
+            help="Type of IoT Hub hostname to show in registration results. "
+            "'auto' uses the TLS 1.3 device hostname (default). "
+            "'classic' uses the default hostname. "
+            "'device' uses the TLS 1.3 device hostname.",
+        )
 
     with self.argument_context("iot dps enrollment-group registration") as context:
         context.argument(

@@ -320,3 +320,13 @@ iot adr ns policy update:
     certificate_validity_days:
       rule_exclusions:
         - no_parameter_defaults_for_update_commands
+iot dps enrollment update:
+  parameters:
+    hostname_type:
+      rule_exclusions:
+        - no_parameter_defaults_for_update_commands
+iot dps enrollment-group update:
+  parameters:
+    hostname_type:
+      rule_exclusions:
+        - no_parameter_defaults_for_update_commands
