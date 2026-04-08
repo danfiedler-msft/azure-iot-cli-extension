@@ -91,24 +91,13 @@ def iot_dps_get(client, dps_name, resource_group_name=None):
     return client.iot_dps_resource.get(provisioning_service_name=dps_name, resource_group_name=resource_group_name)
 
 
-def _enum_to_str(value):
-    """Extract enum value for modelless SDK serialization.
-
-    CLI argparser may pass enum as 'ClassName.VALUE' string or as Enum instance.
-    """
-    if isinstance(value, Enum):
-        return value.value
-    s = str(value)
-    return s.rsplit(".", maxsplit=1)[-1] if "." in s else s
-
-
 def iot_dps_create(
     cmd,
     client,
     dps_name,
     resource_group_name,
     location=None,
-    sku=IotDpsSku.S1,
+    sku=IotDpsSku.S1.value,
     unit=1,
     tags=None,
     enable_data_residency=None,
@@ -142,7 +131,7 @@ def iot_dps_create(
     dps_description = {
         "location": location,
         "properties": dps_property,
-        "sku": {"name": _enum_to_str(sku), "capacity": unit},
+        "sku": {"name": sku, "capacity": unit},
         "tags": tags,
     }
 
@@ -666,7 +655,7 @@ def iot_hub_create(
     hub_name,
     resource_group_name,
     location=None,
-    sku=IotHubSku.S1,
+    sku=IotHubSku.S1.value,
     unit=1,
     partition_count=4,
     retention_day=1,
@@ -724,7 +713,7 @@ def iot_hub_create(
             "to enable it. Check command help (-h) for more information on this property's usage and implications."
         )
 
-    sku = {"name": _enum_to_str(sku), "capacity": unit}
+    sku = {"name": sku, "capacity": unit}
 
     event_hub_dic = {}
     event_hub_dic['events'] = {"retentionTimeInDays": retention_day,
@@ -744,7 +733,7 @@ def iot_hub_create(
         "sasTtlAsIso8601": timedelta(hours=fileupload_sas_ttl),
         "connectionString": fileupload_storage_connectionstring or '',
         "containerName": fileupload_storage_container_name or '',
-        "authenticationType": _enum_to_str(fileupload_storage_authentication_type) if fileupload_storage_authentication_type else None,
+        "authenticationType": fileupload_storage_authentication_type if fileupload_storage_authentication_type else None,
         "identity": {"userAssignedIdentity": fileupload_storage_identity} if fileupload_storage_identity else None,
     }
 
@@ -929,8 +918,8 @@ def update_iot_hub_custom(instance,
     existing_sku_name = instance["sku"]["name"]
     final_sku_name = sku or existing_sku_name
 
-    is_existing_gen2 = existing_sku_name == IotHubSku.GEN2
-    is_final_gen2 = final_sku_name == IotHubSku.GEN2
+    is_existing_gen2 = existing_sku_name == IotHubSku.GEN2.value
+    is_final_gen2 = final_sku_name == IotHubSku.GEN2.value
 
     if sku and (is_existing_gen2 ^ is_final_gen2):
         raise InvalidArgumentValueError(
@@ -1767,7 +1756,7 @@ def _validate_and_set_adr_properties(
 ):
     """Validate and set Azure Device Registry properties for IoT Hub."""
 
-    if sku == IotHubSku.GEN2:
+    if sku == IotHubSku.GEN2.value:
         # Generation2 hubs require both ADR properties
         if not (adr_namespace_resource_id and adr_identity_resource_id):
             raise RequiredArgumentMissingError(

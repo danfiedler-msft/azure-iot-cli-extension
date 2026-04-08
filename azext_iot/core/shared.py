@@ -91,7 +91,7 @@ class ManagedServiceIdentityType(str, Enum):
     SYSTEM_ASSIGNED_USER_ASSIGNED = "SystemAssigned,UserAssigned"
 
 
-class IotHubSku(str, Enum):
+class IotHubSku(Enum):
     """The name of the IoT Hub SKU."""
 
     F1 = "F1"
@@ -104,7 +104,7 @@ class IotHubSku(str, Enum):
     GEN2 = "GEN2"
 
 
-class IotDpsSku(str, Enum):
+class IotDpsSku(Enum):
     """DPS SKU name."""
 
     S1 = "S1"

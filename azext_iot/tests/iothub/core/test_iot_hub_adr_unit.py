@@ -34,7 +34,7 @@ hub_id = f"{rg_id}/providers/Microsoft.Devices/IotHubs/{hub}"
 
 @pytest.mark.parametrize("namespace_id", [namespace_id, None, ""])
 @pytest.mark.parametrize("identity_id", [identity_id, None, ""])
-@pytest.mark.parametrize("sku", [IotHubSku.GEN2, IotHubSku.S1])
+@pytest.mark.parametrize("sku", [IotHubSku.GEN2.value, IotHubSku.S1.value])
 @pytest.mark.parametrize(
     "existing_properties",
     [
@@ -48,7 +48,7 @@ def test_validate_and_set_adr_properties(namespace_id, identity_id, sku, existin
     instance = {"deviceRegistry": existing_properties}
 
     # Test behavior based on SKU type and parameters
-    if sku == IotHubSku.GEN2:  # Generation2 SKU
+    if sku == IotHubSku.GEN2.value:  # Generation2 SKU
         if namespace_id and identity_id:
             # Valid Gen2 configuration
             _validate_and_set_adr_properties(
