@@ -86,6 +86,15 @@ class HostnameType(Enum):
     SERVICE = "service"
 
 
+class GatewayVersion(Enum):
+    """
+    IoT Hub gateway version.
+    """
+
+    V1 = "V1"
+    V2 = "V2"
+
+
 class AttestationType(Enum):
     """
     Type of atestation (TMP or certificate based).
