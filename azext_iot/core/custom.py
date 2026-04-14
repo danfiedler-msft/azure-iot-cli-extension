@@ -41,6 +41,7 @@ from azext_iot.core.shared import (
     EndpointType,
     IdentityType,
     IotDpsSku,
+    IotHubAuthenticationType,
     IotHubSku,
     ManagedServiceIdentityType,
     RenewKeyType,
@@ -76,6 +77,13 @@ class SimpleAccessRights(Enum):
 def _get_resource_group_from_hub(hub):
     """Extract resource group from an IoT Hub resource dict."""
     return hub["resourcegroup"]
+
+
+def _resolve_linked_hub_hostname(hub, hostname_type="device"):
+    """Resolve IoT Hub hostname for DPS linked hub based on hostname type."""
+    if hostname_type == "device":
+        return hub["properties"].get("deviceHostName") or hub["properties"]["hostName"]
+    return hub["properties"]["hostName"]
 
 
 # CUSTOM METHODS FOR DPS
@@ -327,40 +335,107 @@ def iot_dps_linked_hub_create(
     connection_string=None,
     location=None,
     resource_group_name=None,
+    authentication_type=None,
+    user_assigned_identity=None,
+    hostname_type="device",
     apply_allocation_policy=None,
     allocation_weight=None,
     no_wait=False
 ):
-    if not any([connection_string, hub_name]):
-        raise RequiredArgumentMissingError("Please provide the IoT Hub name or connection string.")
-    if not connection_string:
-        # Get the connection string for the hub
-        hub_client = iot_hub_service_factory(cmd.cli_ctx)
-        connection_string = iot_hub_show_connection_string(
-            hub_client, hub_name=hub_name, resource_group_name=hub_resource_group
-        )['connectionString']
+    is_mi = authentication_type in (
+        IotHubAuthenticationType.SYSTEM_ASSIGNED.value,
+        IotHubAuthenticationType.USER_ASSIGNED.value,
+    )
 
-    if not location:
-        # Parse out hub name from connection string if needed
+    # MI based Hub Linking in DPS
+    if is_mi:
         if not hub_name:
-            try:
-                hub_name = re.search(r"hostname=(.[^\;\.]+)?", connection_string, re.IGNORECASE).group(1)
-            except AttributeError:
-                raise InvalidArgumentValueError("Please provide a valid IoT Hub connection string.")
+            raise RequiredArgumentMissingError(
+                "Please provide --hub-name for managed identity authentication."
+            )
+        if authentication_type == IotHubAuthenticationType.USER_ASSIGNED.value and not user_assigned_identity:
+            raise RequiredArgumentMissingError(
+                "--user-assigned-identity is required when --authentication-type is UserAssigned."
+            )
 
         hub_client = iot_hub_service_factory(cmd.cli_ctx)
-        try:
-            location = iot_hub_get(cmd, hub_client, hub_name=hub_name, resource_group_name=hub_resource_group)["location"]
-        except CLIError:
-            raise RequiredArgumentMissingError("Please provide the IoT Hub location.")
+        hub = iot_hub_get(cmd, hub_client, hub_name=hub_name, resource_group_name=hub_resource_group)
+        host_name = _resolve_linked_hub_hostname(hub, hostname_type)
+        if not location:
+            location = hub["location"]
 
-    resource_group_name = _ensure_dps_resource_group_name(client, resource_group_name, dps_name)
+        # Validate MI is enabled on DPS
+        resource_group_name = _ensure_dps_resource_group_name(client, resource_group_name, dps_name)
+        dps = iot_dps_get(client, dps_name, resource_group_name)
+        identity_type = dps["identity"]["type"]
+        if authentication_type == IotHubAuthenticationType.SYSTEM_ASSIGNED.value and "SystemAssigned" not in identity_type:
+            raise InvalidArgumentValueError(
+                f"System-assigned managed identity is not enabled on DPS '{dps_name}'. "
+                "Please enable it before linking with SystemAssigned authentication."
+            )
+        if authentication_type == IotHubAuthenticationType.USER_ASSIGNED.value and "UserAssigned" not in identity_type:
+            raise InvalidArgumentValueError(
+                f"User-assigned managed identity is not configured on DPS '{dps_name}'. "
+                "Please assign a user identity before linking with UserAssigned authentication."
+            )
 
-    dps = iot_dps_get(client, dps_name, resource_group_name)
-    dps["properties"]["iotHubs"].append({"connectionString": connection_string,
-                                         "location": location,
-                                         "applyAllocationPolicy": apply_allocation_policy,
-                                         "allocationWeight": allocation_weight})
+        linked_hub_entry = {
+            "location": location,
+            "authenticationType": authentication_type,
+            "hostName": host_name,
+        }
+        if user_assigned_identity:
+            linked_hub_entry["selectedUserAssignedIdentityResourceId"] = user_assigned_identity
+
+    # KeyBased Hub Linking in DPS
+    else:
+        if not any([connection_string, hub_name]):
+            raise RequiredArgumentMissingError("Please provide the IoT Hub name or connection string.")
+        if not connection_string:
+            hub_client = iot_hub_service_factory(cmd.cli_ctx)
+            hub = iot_hub_get(cmd, hub_client, hub_name=hub_name, resource_group_name=hub_resource_group)
+            host_name = _resolve_linked_hub_hostname(hub, hostname_type)
+            if not location:
+                location = hub["location"]
+            # Build connection string with resolved hostname
+            policies = iot_hub_policy_get(hub_client, hub_name, "iothubowner",
+                                         _get_resource_group_from_hub(hub))
+            connection_string = "HostName={};SharedAccessKeyName={};SharedAccessKey={}".format(
+                host_name, policies["keyName"], policies["primaryKey"]
+            )
+        else:
+            if ".service.azure-devices" in connection_string.lower():
+                raise InvalidArgumentValueError(
+                    "Service hostname is not supported for DPS hub linking. "
+                    "Use a connection string with device or classic hostname."
+                )
+            if not location:
+                if not hub_name:
+                    try:
+                        hub_name = re.search(r"hostname=(.[^\;\.]+)?", connection_string, re.IGNORECASE).group(1)
+                    except AttributeError:
+                        raise InvalidArgumentValueError("Please provide a valid IoT Hub connection string.")
+
+                hub_client = iot_hub_service_factory(cmd.cli_ctx)
+                try:
+                    location = iot_hub_get(cmd, hub_client, hub_name=hub_name, resource_group_name=hub_resource_group)["location"]
+                except CLIError:
+                    raise RequiredArgumentMissingError("Please provide the IoT Hub location.")
+
+        resource_group_name = _ensure_dps_resource_group_name(client, resource_group_name, dps_name)
+        dps = iot_dps_get(client, dps_name, resource_group_name)
+
+        linked_hub_entry = {
+            "connectionString": connection_string,
+            "location": location,
+        }
+
+    if apply_allocation_policy is not None:
+        linked_hub_entry["applyAllocationPolicy"] = apply_allocation_policy
+    if allocation_weight is not None:
+        linked_hub_entry["allocationWeight"] = allocation_weight
+
+    dps["properties"]["iotHubs"].append(linked_hub_entry)
 
     if no_wait:
         return client.iot_dps_resource.begin_create_or_update(
@@ -374,8 +449,8 @@ def iot_dps_linked_hub_create(
     return iot_dps_linked_hub_list(client, dps_name, resource_group_name)
 
 
-def iot_dps_linked_hub_update(cmd, client, dps_name, linked_hub, resource_group_name=None, apply_allocation_policy=None,
-                              allocation_weight=None, no_wait=False):
+def iot_dps_linked_hub_update(cmd, client, dps_name, linked_hub, resource_group_name=None,
+                              apply_allocation_policy=None, allocation_weight=None, no_wait=False):
     if '.' not in linked_hub:
         hub_client = iot_hub_service_factory(cmd.cli_ctx)
         linked_hub = _get_iot_hub_hostname(hub_client, linked_hub)

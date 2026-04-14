@@ -2397,6 +2397,10 @@ def _iot_build_sas_token(
 def _transform_hostname(hostname, hostname_type):
     """Transform a hostname to the requested type via string manipulation."""
     parts = hostname.split(".")
+    if len(parts) < 2:
+        raise InvalidArgumentValueError(
+            f"'{hostname}' is not a valid IoT Hub hostname. Expected format: <hub>.azure-devices.<suffix>"
+        )
     hub_name = parts[0]
     if parts[1] in (HostnameType.DEVICE.value, HostnameType.SERVICE.value):
         domain = ".".join(parts[2:])
@@ -2992,7 +2996,7 @@ def _get_hub_connection_string(
         ]
 
     if hostname_type == HostnameType.AUTO.value:
-        hostname = hub["properties"].get("serviceHostName") or hub["properties"]["hostName"]
+        hostname = hub["properties"].get("deviceHostName") or hub["properties"]["hostName"]
     else:
         hostname = _transform_hostname(hub["properties"]["hostName"], hostname_type)
     cs_template = "HostName={};SharedAccessKeyName={};SharedAccessKey={}"

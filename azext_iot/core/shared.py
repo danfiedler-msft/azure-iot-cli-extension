@@ -110,6 +110,14 @@ class IotDpsSku(Enum):
     S1 = "S1"
 
 
+class IotHubAuthenticationType(Enum):
+    """Authentication type for DPS linked IoT Hub."""
+
+    KEY_BASED = "KeyBased"
+    SYSTEM_ASSIGNED = "SystemAssigned"
+    USER_ASSIGNED = "UserAssigned"
+
+
 class AccessRightsDescription(str, Enum):
     """DPS access rights."""
 
