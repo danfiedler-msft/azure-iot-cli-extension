@@ -8,7 +8,7 @@ from knack.log import get_logger
 from azure.cli.core.commands.client_factory import get_subscription_id
 from azext_iot.common._azure import IOT_SERVICE_CS_TEMPLATE
 from azext_iot.common.base_discovery import BaseDiscovery
-from azext_iot.common.shared import DiscoveryResourceType, AuthenticationTypeDataplane
+from azext_iot.common.shared import DiscoveryResourceType, AuthenticationTypeDataplane, GatewayVersion
 from azext_iot.common.utility import trim_from_start
 from azext_iot.iothub.models.iothub_target import IotHubTarget
 from azext_iot._factory import iot_hub_service_factory
@@ -77,7 +77,7 @@ class IotHubDiscovery(BaseDiscovery):
         tls_device = props.get("deviceHostName")
         tls_service = props.get("serviceHostName")
         gw_version = props.get("iotHubDetails", {}).get("gatewayVersion")
-        service_hostname = tls_service if gw_version == "V2" else None
+        service_hostname = tls_service if gw_version == GatewayVersion.V2.value else None
         hostname = service_hostname or props.get("hostName")
 
         target = {}

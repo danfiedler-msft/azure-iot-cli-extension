@@ -97,7 +97,7 @@ def iot_dps_create(
     dps_name,
     resource_group_name,
     location=None,
-    sku=IotDpsSku.S1,
+    sku=IotDpsSku.S1.value,
     unit=1,
     tags=None,
     enable_data_residency=None,
@@ -655,7 +655,7 @@ def iot_hub_create(
     hub_name,
     resource_group_name,
     location=None,
-    sku=IotHubSku.S1,
+    sku=IotHubSku.S1.value,
     unit=1,
     partition_count=4,
     retention_day=1,
@@ -913,8 +913,8 @@ def update_iot_hub_custom(instance,
     existing_sku_name = instance["sku"]["name"]
     final_sku_name = sku or existing_sku_name
 
-    is_existing_gen2 = existing_sku_name == IotHubSku.GEN2
-    is_final_gen2 = final_sku_name == IotHubSku.GEN2
+    is_existing_gen2 = existing_sku_name == IotHubSku.GEN2.value
+    is_final_gen2 = final_sku_name == IotHubSku.GEN2.value
 
     if sku and (is_existing_gen2 ^ is_final_gen2):
         raise InvalidArgumentValueError(
@@ -1751,7 +1751,7 @@ def _validate_and_set_adr_properties(
 ):
     """Validate and set Azure Device Registry properties for IoT Hub."""
 
-    if sku == IotHubSku.GEN2:
+    if sku == IotHubSku.GEN2.value:
         # Generation2 hubs require both ADR properties
         if not (adr_namespace_resource_id and adr_identity_resource_id):
             raise RequiredArgumentMissingError(
