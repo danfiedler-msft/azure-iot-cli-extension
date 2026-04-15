@@ -29,6 +29,8 @@ from knack.log import get_logger
 from knack.util import CLIError
 
 from azext_iot._factory import iot_hub_service_factory, resource_service_factory
+from azext_iot.common._azure import IOT_SERVICE_CS_TEMPLATE
+from azext_iot.constants import IOT_HUB_DEFAULT_POLICY
 from azext_iot.common.certops import open_certificate
 from azext_iot.core.shared import (
     ADR_CONFIGURE_ROLES_ERROR_MSG,
@@ -361,8 +363,6 @@ def iot_dps_linked_hub_create(
         hub_client = iot_hub_service_factory(cmd.cli_ctx)
         hub = iot_hub_get(cmd, hub_client, hub_name=hub_name, resource_group_name=hub_resource_group)
         host_name = _resolve_linked_hub_hostname(hub, hostname_type)
-        if not location:
-            location = hub["location"]
 
         # Validate MI is enabled on DPS
         resource_group_name = _ensure_dps_resource_group_name(client, resource_group_name, dps_name)
@@ -380,7 +380,7 @@ def iot_dps_linked_hub_create(
             )
 
         linked_hub_entry = {
-            "location": location,
+            "location": location or hub["location"],
             "authenticationType": authentication_type,
             "hostName": host_name,
         }
@@ -395,12 +395,11 @@ def iot_dps_linked_hub_create(
             hub_client = iot_hub_service_factory(cmd.cli_ctx)
             hub = iot_hub_get(cmd, hub_client, hub_name=hub_name, resource_group_name=hub_resource_group)
             host_name = _resolve_linked_hub_hostname(hub, hostname_type)
-            if not location:
-                location = hub["location"]
+            location = location or hub["location"]
             # Build connection string with resolved hostname
-            policies = iot_hub_policy_get(hub_client, hub_name, "iothubowner",
+            policies = iot_hub_policy_get(hub_client, hub_name, IOT_HUB_DEFAULT_POLICY,
                                          _get_resource_group_from_hub(hub))
-            connection_string = "HostName={};SharedAccessKeyName={};SharedAccessKey={}".format(
+            connection_string = IOT_SERVICE_CS_TEMPLATE.format(
                 host_name, policies["keyName"], policies["primaryKey"]
             )
         else:

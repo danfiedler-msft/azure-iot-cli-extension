@@ -2397,10 +2397,6 @@ def _iot_build_sas_token(
 def _transform_hostname(hostname, hostname_type):
     """Transform a hostname to the requested type via string manipulation."""
     parts = hostname.split(".")
-    if len(parts) < 2:
-        raise InvalidArgumentValueError(
-            f"'{hostname}' is not a valid IoT Hub hostname. Expected format: <hub>.azure-devices.<suffix>"
-        )
     hub_name = parts[0]
     if parts[1] in (HostnameType.DEVICE.value, HostnameType.SERVICE.value):
         domain = ".".join(parts[2:])
