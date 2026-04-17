@@ -76,6 +76,10 @@ on:
         type: string
         required: false
         default: ""
+      testDispatchOnly:
+        description: "Test dispatch only (skip tests, just dispatch to target branch)"
+        type: boolean
+        default: false
 
 permissions:
   contents: "read"
@@ -89,7 +93,9 @@ jobs:
   schedule-dispatch:
     name: "Dispatch to dev and preview"
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' && github.repository == 'Azure/azure-iot-cli-extension'
+    if: >
+      (github.event_name == 'schedule' && github.repository == 'Azure/azure-iot-cli-extension') || (github.event_name ==
+      'workflow_dispatch' && inputs.testDispatchOnly)
     steps:
       - name: "Compute rotation and dispatch"
         env:
@@ -125,7 +131,7 @@ jobs:
   setup:
     name: "Detect test matrix"
     runs-on: ubuntu-latest
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && !inputs.testDispatchOnly
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
@@ -253,7 +259,7 @@ jobs:
   unit-test:
     name: "Linter and unit tests"
     runs-on: ubuntu-latest
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && !inputs.testDispatchOnly
     steps:
       - name: "Checkout source"
         uses: actions/checkout@v4
