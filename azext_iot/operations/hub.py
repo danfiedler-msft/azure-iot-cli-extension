@@ -2993,8 +2993,16 @@ def _get_hub_connection_string(
 
     if hostname_type == HostnameType.AUTO.value:
         hostname = hub["properties"].get("deviceHostName") or hub["properties"]["hostName"]
+    elif hostname_type == HostnameType.CLASSIC.value:
+        hostname = hub["properties"]["hostName"]
     else:
-        hostname = _transform_hostname(hub["properties"]["hostName"], hostname_type)
+        key = "deviceHostName" if hostname_type == HostnameType.DEVICE.value else "serviceHostName"
+        hostname = hub["properties"].get(key)
+        if not hostname:
+            raise InvalidArgumentValueError(
+                f"The '{hostname_type}' hostname is not available for IoT Hub '{hub['name']}'. "
+                "This hostname type is only supported on GWv2 IoT Hubs."
+            )
     cs_template = "HostName={};SharedAccessKeyName={};SharedAccessKey={}"
     return [
         cs_template.format(

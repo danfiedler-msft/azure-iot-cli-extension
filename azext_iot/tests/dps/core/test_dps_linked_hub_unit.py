@@ -7,6 +7,7 @@
 import pytest
 from azure.cli.core.azclierror import (
     InvalidArgumentValueError,
+    MutuallyExclusiveArgumentError,
     RequiredArgumentMissingError,
 )
 from azext_iot.core.custom import _resolve_linked_hub_hostname
@@ -82,6 +83,27 @@ class TestLinkedHubCreateValidation:
         from azext_iot.core.custom import iot_dps_linked_hub_create
         mocker.patch("azext_iot.core.custom.iot_dps_get", return_value={
             "identity": {"type": "None"},
+            "properties": {"iotHubs": []},
+        })
+        with pytest.raises(InvalidArgumentValueError, match="System-assigned managed identity is not enabled"):
+            iot_dps_linked_hub_create(
+                cmd=fixture_cmd, client=mock_deps, dps_name="dps",
+                hub_name="hub", authentication_type="SystemAssigned"
+            )
+
+    def test_mi_with_connection_string_rejected(self, fixture_cmd, mock_deps):
+        from azext_iot.core.custom import iot_dps_linked_hub_create
+        with pytest.raises(MutuallyExclusiveArgumentError, match="--connection-string cannot be used with --authentication-type"):
+            iot_dps_linked_hub_create(
+                cmd=fixture_cmd, client=mock_deps, dps_name="dps",
+                hub_name="hub", authentication_type="SystemAssigned",
+                connection_string="HostName=hub.azure-devices.net;SharedAccessKeyName=x;SharedAccessKey=y"
+            )
+
+    def test_mi_null_identity_on_dps(self, fixture_cmd, mock_deps, mocker):
+        from azext_iot.core.custom import iot_dps_linked_hub_create
+        mocker.patch("azext_iot.core.custom.iot_dps_get", return_value={
+            "identity": None,
             "properties": {"iotHubs": []},
         })
         with pytest.raises(InvalidArgumentValueError, match="System-assigned managed identity is not enabled"):

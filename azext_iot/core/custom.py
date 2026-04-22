@@ -17,6 +17,7 @@ from azure.cli.core.azclierror import (
     BadRequestError,
     CLIInternalError,
     InvalidArgumentValueError,
+    MutuallyExclusiveArgumentError,
     RequiredArgumentMissingError,
     ResourceNotFoundError,
     UnclassifiedUserFault,
@@ -351,6 +352,11 @@ def iot_dps_linked_hub_create(
 
     # MI based Hub Linking in DPS
     if is_mi:
+        if connection_string:
+            raise MutuallyExclusiveArgumentError(
+                "--connection-string cannot be used with --authentication-type. "
+                "Use --hub-name instead for managed identity authentication."
+            )
         if not hub_name:
             raise RequiredArgumentMissingError(
                 "Please provide --hub-name for managed identity authentication."
@@ -367,7 +373,8 @@ def iot_dps_linked_hub_create(
         # Validate MI is enabled on DPS
         resource_group_name = _ensure_dps_resource_group_name(client, resource_group_name, dps_name)
         dps = iot_dps_get(client, dps_name, resource_group_name)
-        identity_type = dps["identity"]["type"]
+        identity = dps.get("identity") or {}
+        identity_type = identity.get("type", "None") if isinstance(identity, dict) else "None"
         if authentication_type == IotHubAuthenticationType.SYSTEM_ASSIGNED.value and "SystemAssigned" not in identity_type:
             raise InvalidArgumentValueError(
                 f"System-assigned managed identity is not enabled on DPS '{dps_name}'. "
