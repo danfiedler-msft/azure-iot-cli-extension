@@ -105,14 +105,17 @@ def _warn_mixed_endpoint_types(linked_hubs):
         # Only check hubs participating in allocation
         if hub.get("applyAllocationPolicy") is False:
             continue
-        hostname = hub.get("name", "") or hub.get("hostName", "")
+        hostname = hub.get("hostName", "")
         if not hostname:
             cs = hub.get("connectionString", "")
             for part in cs.split(";"):
                 if part.lower().startswith("hostname="):
                     hostname = part.split("=", 1)[1]
                     break
-        if ".device." in hostname:
+        if not hostname:
+            hostname = hub.get("name", "")
+        parts = hostname.split(".")
+        if len(parts) > 1 and parts[1] == "device":
             types.add("device")
         elif hostname:
             types.add("classic")
