@@ -147,12 +147,12 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
                    'Required when authentication type is UserAssigned.')
         c.argument('hostname_type',
                    options_list=['--hostname-type', '--ht'],
-                   arg_type=get_enum_type(["device", "classic"]),
-                   default="device",
+                   arg_type=get_enum_type(["auto", "device", "classic"]),
+                   default="auto",
                    help="Type of IoT Hub hostname to use when linking. "
-                   "'device' uses the TLS 1.3 device hostname (hub.device.azure-devices.net). "
+                   "'auto' uses the TLS 1.3 device hostname if available, classic otherwise. "
+                   "'device' uses the TLS 1.3 device hostname (errors if not GWv2). "
                    "'classic' uses the classic hostname (hub.azure-devices.net). "
-                   "Falls back to classic if the hub does not support TLS 1.3. "
                    "Only applies when --hub-name is provided.")
         c.argument('apply_allocation_policy',
                    help='A boolean indicating whether to apply allocation policy to the IoT hub.',

@@ -10,7 +10,7 @@ from azure.cli.core.azclierror import (
     MutuallyExclusiveArgumentError,
     RequiredArgumentMissingError,
 )
-from azext_iot.core.custom import _resolve_linked_hub_hostname
+from azext_iot.core.custom import _resolve_linked_hub_hostname, _warn_mixed_endpoint_types
 
 
 class TestResolveLinkedHubHostname:
@@ -18,17 +18,28 @@ class TestResolveLinkedHubHostname:
         hub = {"properties": {"deviceHostName": "hub.device.azure-devices.net", "hostName": "hub.azure-devices.net"}}
         assert _resolve_linked_hub_hostname(hub, "device") == "hub.device.azure-devices.net"
 
-    def test_device_fallback_to_classic(self):
+    def test_device_errors_on_v1_hub(self):
+        hub = {"properties": {"hostName": "hub.azure-devices.net"}, "name": "hub"}
+        with pytest.raises(InvalidArgumentValueError, match="device hostname is not available"):
+            _resolve_linked_hub_hostname(hub, "device")
+
+    def test_auto_fallback_to_classic(self):
         hub = {"properties": {"hostName": "hub.azure-devices.net"}}
-        assert _resolve_linked_hub_hostname(hub, "device") == "hub.azure-devices.net"
+        assert _resolve_linked_hub_hostname(hub, "auto") == "hub.azure-devices.net"
+
+    def test_auto_uses_device_when_available(self):
+        hub = {"properties": {"deviceHostName": "hub.device.azure-devices.net", "hostName": "hub.azure-devices.net"}}
+        assert _resolve_linked_hub_hostname(hub, "auto") == "hub.device.azure-devices.net"
 
     def test_classic(self):
         hub = {"properties": {"deviceHostName": "hub.device.azure-devices.net", "hostName": "hub.azure-devices.net"}}
         assert _resolve_linked_hub_hostname(hub, "classic") == "hub.azure-devices.net"
 
-    def test_default_is_device(self):
+    def test_default_is_auto(self):
         hub = {"properties": {"deviceHostName": "hub.device.azure-devices.net", "hostName": "hub.azure-devices.net"}}
         assert _resolve_linked_hub_hostname(hub) == "hub.device.azure-devices.net"
+        hub_v1 = {"properties": {"hostName": "hub.azure-devices.net"}}
+        assert _resolve_linked_hub_hostname(hub_v1) == "hub.azure-devices.net"
 
 
 class TestLinkedHubCreateValidation:
@@ -111,3 +122,50 @@ class TestLinkedHubCreateValidation:
                 cmd=fixture_cmd, client=mock_deps, dps_name="dps",
                 hub_name="hub", authentication_type="SystemAssigned"
             )
+
+
+class TestMixedEndpointWarning:
+    def test_no_warning_all_device(self, caplog):
+        hubs = [
+            {"name": "hub1.device.azure-devices.net"},
+            {"name": "hub2.device.azure-devices.net"},
+        ]
+        _warn_mixed_endpoint_types(hubs)
+        assert "mixed hostname types" not in caplog.text
+
+    def test_no_warning_all_classic(self, caplog):
+        hubs = [
+            {"name": "hub1.azure-devices.net"},
+            {"name": "hub2.azure-devices.net"},
+        ]
+        _warn_mixed_endpoint_types(hubs)
+        assert "mixed hostname types" not in caplog.text
+
+    def test_warning_on_mixed(self, caplog):
+        import logging
+        with caplog.at_level(logging.WARNING):
+            hubs = [
+                {"name": "hub1.device.azure-devices.net"},
+                {"name": "hub2.azure-devices.net"},
+            ]
+            _warn_mixed_endpoint_types(hubs)
+            assert "mixed hostname types" in caplog.text
+
+    def test_warning_on_mixed_with_connection_string(self, caplog):
+        import logging
+        with caplog.at_level(logging.WARNING):
+            hubs = [
+                {"name": "hub1.device.azure-devices.net"},
+                {"connectionString": "HostName=hub2.azure-devices.net;SharedAccessKeyName=x;SharedAccessKey=y"},
+            ]
+            _warn_mixed_endpoint_types(hubs)
+            assert "mixed hostname types" in caplog.text
+
+    def test_no_warning_single_hub(self, caplog):
+        hubs = [{"name": "hub1.device.azure-devices.net"}]
+        _warn_mixed_endpoint_types(hubs)
+        assert "mixed hostname types" not in caplog.text
+
+    def test_no_warning_empty(self, caplog):
+        _warn_mixed_endpoint_types([])
+        assert "mixed hostname types" not in caplog.text

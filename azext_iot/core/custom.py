@@ -82,11 +82,48 @@ def _get_resource_group_from_hub(hub):
     return hub["resourcegroup"]
 
 
-def _resolve_linked_hub_hostname(hub, hostname_type="device"):
+def _resolve_linked_hub_hostname(hub, hostname_type="auto"):
     """Resolve IoT Hub hostname for DPS linked hub based on hostname type."""
-    if hostname_type == "device":
-        return hub["properties"].get("deviceHostName") or hub["properties"]["hostName"]
-    return hub["properties"]["hostName"]
+    if hostname_type == "classic":
+        return hub["properties"]["hostName"]
+    device_hostname = hub["properties"].get("deviceHostName")
+    if hostname_type == "device" and not device_hostname:
+        hub_name = hub.get("name", "unknown")
+        raise InvalidArgumentValueError(
+            f"The device hostname is not available for IoT Hub '{hub_name}'. "
+            "This hostname type is only supported on GWv2 IoT Hubs. "
+            "Use '--hostname-type classic' or '--hostname-type auto' instead."
+        )
+    # "auto" or "device" with available deviceHostName
+    return device_hostname or hub["properties"]["hostName"]
+
+
+def _warn_mixed_endpoint_types(linked_hubs):
+    """Warn if DPS dynamic allocation references hubs with mixed hostname types."""
+    types = set()
+    for hub in linked_hubs:
+        # Only check hubs participating in allocation
+        if hub.get("applyAllocationPolicy") is False:
+            continue
+        hostname = hub.get("hostName", "")
+        if not hostname:
+            cs = hub.get("connectionString", "")
+            for part in cs.split(";"):
+                if part.lower().startswith("hostname="):
+                    hostname = part.split("=", 1)[1]
+                    break
+        if not hostname:
+            hostname = hub.get("name", "")
+        parts = hostname.split(".")
+        if len(parts) > 1 and parts[1] == "device":
+            types.add("device")
+        elif hostname:
+            types.add("classic")
+    if len(types) > 1:
+        logger.warning(
+            "DPS has linked hubs with mixed hostname types (device and classic). "
+            "This may cause inconsistent behavior during device provisioning."
+        )
 
 
 # CUSTOM METHODS FOR DPS
@@ -340,7 +377,7 @@ def iot_dps_linked_hub_create(
     resource_group_name=None,
     authentication_type=None,
     user_assigned_identity=None,
-    hostname_type="device",
+    hostname_type="auto",
     apply_allocation_policy=None,
     allocation_weight=None,
     no_wait=False
@@ -442,6 +479,9 @@ def iot_dps_linked_hub_create(
         linked_hub_entry["allocationWeight"] = allocation_weight
 
     dps["properties"]["iotHubs"].append(linked_hub_entry)
+
+    # Warn if linked hubs have mixed hostname types (device + classic)
+    _warn_mixed_endpoint_types(dps["properties"]["iotHubs"])
 
     if no_wait:
         return client.iot_dps_resource.begin_create_or_update(
