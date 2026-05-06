@@ -57,9 +57,7 @@ def _get_credential_scopes(cli_ctx):
 
 
 def _get_arm_endpoint(cli_ctx):
-    """TODO: Revert to cli_ctx.cloud.endpoints.resource_manager once 2026-03-01-preview
-    is registered globally in ARM for all regions."""
-    return "https://eastus2euap.management.azure.com"
+    return cli_ctx.cloud.endpoints.resource_manager
 
 
 def iot_hub_service_factory(cli_ctx, *_):
