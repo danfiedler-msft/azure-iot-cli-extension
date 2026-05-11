@@ -42,6 +42,8 @@ class MessageEndpoint(IoTHubProvider):
         rg: Optional[str] = None,
     ):
         super(MessageEndpoint, self).__init__(cmd, hub_name, rg, dataplane=False)
+        # Modelless SDK omits None/empty fields; ensure enrichments key exists.
+        self.hub_resource["properties"]["routing"].setdefault("enrichments", [])
         # Temporary flag to check for which cosmos property to look for.
         self.support_cosmos = IoTHubSDKVersion.NoCosmos.value
         endpoints = self.hub_resource["properties"]["routing"]["endpoints"]
@@ -276,12 +278,12 @@ class MessageEndpoint(IoTHubProvider):
         # If Identity and Connection String args are provided, Identity wins
         if identity:
             if endpoint_type.lower() == EndpointType.CosmosDBContainer.value:
-                if original_endpoint["primaryKey"] or original_endpoint["secondaryKey"]:
+                if original_endpoint.get("primaryKey") or original_endpoint.get("secondaryKey"):
                     logger.warning(NULL_WARNING.format("Primary and secondary keys"))
                 original_endpoint["primaryKey"] = None
                 original_endpoint["secondaryKey"] = None
             else:
-                if original_endpoint["connectionString"]:
+                if original_endpoint.get("connectionString"):
                     logger.warning(NULL_WARNING.format("The connection string"))
                 original_endpoint["connectionString"] = None
             original_endpoint["authenticationType"] = AuthenticationType.IdentityBased.value
@@ -292,7 +294,7 @@ class MessageEndpoint(IoTHubProvider):
                     "userAssignedIdentity": identity
                 }
         elif any([connection_string, primary_key, secondary_key]):
-            if original_endpoint["identity"]:
+            if original_endpoint.get("identity"):
                 logger.warning(NULL_WARNING.format("The managed identity property"))
             original_endpoint["identity"] = None
             original_endpoint["authenticationType"] = AuthenticationType.KeyBased.value
