@@ -2712,6 +2712,7 @@ def iot_hub_monitor_events(
     content_type=None,
     device_query=None,
     message_count: Optional[int] = None,
+    transport=None,
 ):
     try:
         _iot_hub_monitor_events(
@@ -2731,6 +2732,7 @@ def iot_hub_monitor_events(
             content_type=content_type,
             device_query=device_query,
             message_count=message_count,
+            transport=transport,
         )
     except RuntimeError as e:
         raise CLIInternalError(e)
@@ -2799,6 +2801,7 @@ def _iot_hub_monitor_events(
     content_type=None,
     device_query=None,
     message_count: Optional[int] = None,
+    transport=None,
 ):
     (enqueued_time, properties, timeout, output, message_count) = init_monitoring(
         cmd, timeout, properties, enqueued_time, repair, yes, message_count
@@ -2830,7 +2833,7 @@ def _iot_hub_monitor_events(
         CommonHandlerArguments,
     )
 
-    target = hub_target_builder.EventTargetBuilder().build_iot_hub_target(target)
+    target = hub_target_builder.EventTargetBuilder().build_iot_hub_target(target, transport=transport)
     target.add_consumer_group(consumer_group)
 
     on_start_string = generate_on_start_string(device_id=device_id)
@@ -2856,6 +2859,7 @@ def _iot_hub_monitor_events(
         on_start_string=on_start_string,
         on_message_received=handler.parse_message,
         timeout=timeout,
+        transport=transport,
     )
 
 
