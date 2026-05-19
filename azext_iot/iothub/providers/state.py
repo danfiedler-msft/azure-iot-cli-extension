@@ -1003,8 +1003,7 @@ class StateProvider(IoTHubProvider):
     def delete_all_certificates(self):
         """Delete all certs if possible."""
         cert_client = self._get_client().certificates
-        # serialize strips name and etag - use as_dict instead
-        certificates = cert_client.list_by_iot_hub(self.rg, self.hub_name).as_dict()
+        certificates = cert_client.list_by_iot_hub(self.rg, self.hub_name)
 
         # TODO - need to support SDKs with/without match_condition argument
         for cert in tqdm(certificates["value"], desc=usr_msgs.DELETE_CERT_DESC, ascii=" #"):
