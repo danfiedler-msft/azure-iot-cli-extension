@@ -89,11 +89,15 @@ class TestHostnameTypeBugBash:
     """SAS audience routing + CS-show service-hostname rejection."""
 
     HUB = "mygwv2hub"
+    _PRIMARY = generate_generic_id()
+    _SECONDARY = generate_generic_id()
+    _DEVICE_PRIMARY = generate_generic_id()
+    _DEVICE_SECONDARY = generate_generic_id()
     TARGET = {
         "entity": f"{HUB}.service.azure-devices.net",
         "policy": "iothubowner",
-        "primarykey": "cHJpbWFyeUtleQ==",
-        "secondarykey": "c2Vjb25kYXJ5",
+        "primarykey": _PRIMARY,
+        "secondarykey": _SECONDARY,
         "name": HUB, "subscription": "sub", "resourcegroup": "rg",
         "deviceHostName": f"{HUB}.device.azure-devices.net",
         "serviceHostName": f"{HUB}.service.azure-devices.net",
@@ -102,7 +106,7 @@ class TestHostnameTypeBugBash:
     DEVICE = {
         "deviceId": "d1",
         "authentication": {"type": "sas", "symmetricKey": {
-            "primaryKey": "ZGV2aWNlS2V5", "secondaryKey": "ZGV2aWNlMg=="}},
+            "primaryKey": _DEVICE_PRIMARY, "secondaryKey": _DEVICE_SECONDARY}},
     }
     MODULE = {**DEVICE, "moduleId": "m1"}
 
@@ -175,9 +179,10 @@ class TestHostnameTypeBugBash:
     def test_sas_audience_login_mode(
         self, mocker, fixture_cmd, scope, hostname_type, login_host, expected
     ):
+        key = generate_generic_id()
         target = dict(self.TARGET, entity=login_host,
-                      cs=f"HostName={login_host};SharedAccessKeyName=iothubowner;"
-                         "SharedAccessKey=cHJpbWFyeUtleQ==")
+                      cs=(f"HostName={login_host};SharedAccessKeyName=iothubowner;"
+                          f"SharedAccessKey={key}"))
         mocker.patch("azext_iot.operations.hub.IotHubDiscovery.get_target",
                      return_value=target)
         token = subject.iot_get_sas_token(
