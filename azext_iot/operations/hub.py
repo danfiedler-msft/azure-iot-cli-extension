@@ -2240,6 +2240,7 @@ def iot_get_sas_token(
     module_id=None,
     auth_type_dataplane=None,
     connection_string=None,
+    hostname_type=HostnameType.AUTO.value,
 ):
     key_type = key_type.lower()
     policy_name = policy_name.lower()
@@ -2258,6 +2259,11 @@ def iot_get_sas_token(
         )
 
     if connection_string:
+        if hostname_type != HostnameType.AUTO.value:
+            raise ArgumentUsageError(
+                "--hostname-type is not supported with --connection-string. "
+                "The SAS audience is derived from the HostName in the supplied connection string."
+            )
         return {
             DeviceAuthApiType.sas.value: _iot_build_sas_token_from_cs(
                 connection_string,
@@ -2277,6 +2283,7 @@ def iot_get_sas_token(
             resource_group_name,
             login,
             auth_type_dataplane,
+            hostname_type,
         ).generate_sas_token()
     }
 
@@ -2330,6 +2337,7 @@ def _iot_build_sas_token(
     resource_group_name=None,
     login=None,
     auth_type_dataplane=None,
+    hostname_type=HostnameType.AUTO.value,
 ):
     from azext_iot.common._azure import (
         parse_iot_device_connection_string,
@@ -2352,6 +2360,14 @@ def _iot_build_sas_token(
     policy = None
     key = None
 
+    auto_tls_key = "deviceHostName" if device_id else "serviceHostName"
+    if login:
+        resolved_host = _transform_hostname(target["entity"], hostname_type)
+    else:
+        resolved_host = _resolve_hostname_by_type(
+            target, hostname_type, auto_tls_key=auto_tls_key
+        )
+
     if device_id:
         logger.info(
             'Obtaining device "%s" details from registry, using IoT Hub policy "%s"',
@@ -2365,7 +2381,7 @@ def _iot_build_sas_token(
                 entity=module, key_type=key_type
             )
             uri = "{}/devices/{}/modules/{}".format(
-                target["entity"], device_id, module_id
+                resolved_host, device_id, module_id
             )
             try:
                 parsed_module_cs = parse_iot_device_module_connection_string(module_cs)
@@ -2378,7 +2394,7 @@ def _iot_build_sas_token(
             device_cs = _build_device_or_module_connection_string(
                 entity=device, key_type=key_type
             )
-            uri = "{}/devices/{}".format(target["entity"], device_id)
+            uri = "{}/devices/{}".format(resolved_host, device_id)
             try:
                 parsed_device_cs = parse_iot_device_connection_string(device_cs)
             except ValueError as e:
@@ -2387,7 +2403,7 @@ def _iot_build_sas_token(
 
             key = parsed_device_cs["SharedAccessKey"]
     else:
-        uri = target["entity"]
+        uri = resolved_host
         policy = target["policy"]
         key = target["primarykey"] if key_type == "primary" else target["secondarykey"]
 
@@ -2468,6 +2484,11 @@ def iot_get_device_connection_string(
     auth_type_dataplane=None,
     hostname_type=HostnameType.AUTO.value,
 ):
+    if hostname_type == HostnameType.SERVICE.value:
+        raise InvalidArgumentValueError(
+            "Hostname type 'service' is not supported for device connection strings. "
+            "Use 'auto', 'device', or 'classic' instead."
+        )
     result = {}
     discovery = IotHubDiscovery(cmd)
     target = discovery.get_target(
@@ -2498,6 +2519,11 @@ def iot_get_module_connection_string(
     auth_type_dataplane=None,
     hostname_type=HostnameType.AUTO.value,
 ):
+    if hostname_type == HostnameType.SERVICE.value:
+        raise InvalidArgumentValueError(
+            "Hostname type 'service' is not supported for module connection strings. "
+            "Use 'auto', 'device', or 'classic' instead."
+        )
     result = {}
     discovery = IotHubDiscovery(cmd)
     target = discovery.get_target(
