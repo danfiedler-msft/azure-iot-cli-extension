@@ -390,8 +390,11 @@ def load_arguments(self, _):
             "'auto' uses the device hostname for device/module-scoped tokens "
             "and the service hostname for hub-scoped tokens. "
             "'classic' always uses the default hostname. "
-            "'device' uses the device hostname. "
-            "'service' uses the service hostname.",
+            "'device' uses the device hostname (errors on non-GWv2 hubs). "
+            "'service' uses the service hostname (errors on non-GWv2 hubs). "
+            "This option cannot be combined with --connection-string; when "
+            "--connection-string is supplied, the SAS audience is derived "
+            "from its HostName.",
         )
 
     with self.argument_context("iot hub job") as context:

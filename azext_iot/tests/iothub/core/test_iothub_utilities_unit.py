@@ -85,7 +85,7 @@ class TestGenerateSasToken:
             )
 
 
-class TestHostnameTypeBugBash:
+class TestHostnameTypeRouting:
     """SAS audience routing + CS-show service-hostname rejection."""
 
     HUB = "mygwv2hub"
@@ -165,9 +165,20 @@ class TestHostnameTypeBugBash:
             )
 
     @pytest.mark.parametrize("scope, hostname_type, login_host, expected", [
-        # login (offline) mode: audience comes from string-transformed CS HostName
+        # login (offline) mode: audience comes from string-transformed CS HostName.
+        # auto defaults to scope-appropriate hostname.
         ({}, "auto", "mygwv2hub.service.azure-devices.net",
          "mygwv2hub.service.azure-devices.net"),
+        ({}, "auto", "mygwv2hub.azure-devices.net",
+         "mygwv2hub.service.azure-devices.net"),
+        ({"device_id": "d1"}, "auto", "mygwv2hub.service.azure-devices.net",
+         "mygwv2hub.device.azure-devices.net/devices/d1"),
+        ({"device_id": "d1"}, "auto", "mygwv2hub.azure-devices.net",
+         "mygwv2hub.device.azure-devices.net/devices/d1"),
+        ({"device_id": "d1", "module_id": "m1"}, "auto",
+         "mygwv2hub.service.azure-devices.net",
+         "mygwv2hub.device.azure-devices.net/devices/d1/modules/m1"),
+
         ({"device_id": "d1"}, "device", "mygwv2hub.azure-devices.net",
          "mygwv2hub.device.azure-devices.net/devices/d1"),
         ({"device_id": "d1"}, "classic", "mygwv2hub.service.azure-devices.net",
