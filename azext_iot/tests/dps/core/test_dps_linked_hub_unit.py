@@ -381,6 +381,29 @@ class TestLinkedHubUpdate:
                 cmd=fixture_cmd, client=mock_deps, dps_name="dps", hub_name="myhub",
             )
 
+    def test_hostname_swap_preserves_existing_policy(self, fixture_cmd, mock_deps, existing_entries, mocker):
+        """Hostname swap on KeyBased must re-fetch using the EXISTING policy (e.g., 'service'
+        for least-privilege setups) — must not silently downgrade to iothubowner."""
+        from azext_iot.core.custom import iot_dps_linked_hub_update
+        existing_entries[0]["connectionString"] = (
+            "HostName=myhub.azure-devices.net;"
+            "SharedAccessKeyName=service;SharedAccessKey=existing-key"
+        )
+        policy_spy = mocker.patch(
+            "azext_iot.core.custom.iot_hub_policy_get",
+            return_value={"keyName": "service", "primaryKey": "rotated-service-key"},
+        )
+
+        iot_dps_linked_hub_update(
+            cmd=fixture_cmd, client=mock_deps, dps_name="dps",
+            hub_name="myhub", hostname_type="device",
+        )
+
+        assert policy_spy.call_args.args[2] == "service", (
+            f"Expected policy 'service' to be preserved, got {policy_spy.call_args.args[2]!r}"
+        )
+        assert "SharedAccessKeyName=service" in existing_entries[0]["connectionString"]
+
     def test_keybased_with_linked_hub_auto_fetches(self, fixture_cmd, mock_deps, existing_entries):
         """--linked-hub + --auth-type KeyBased (no CS) derives the hub short name to auto-fetch the key."""
         from azext_iot.core.custom import iot_dps_linked_hub_update

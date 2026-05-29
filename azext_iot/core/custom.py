@@ -31,6 +31,7 @@ from knack.util import CLIError
 
 from azext_iot._factory import iot_hub_service_factory, resource_service_factory
 from azext_iot.common._azure import IOT_SERVICE_CS_TEMPLATE
+from azext_iot.common.utility import validate_key_value_pairs
 from azext_iot.constants import IOT_HUB_DEFAULT_POLICY
 from azext_iot.common.certops import open_certificate
 from azext_iot.core.shared import (
@@ -658,8 +659,10 @@ def iot_dps_linked_hub_update(
                 )
             target_entry["connectionString"] = connection_string
         else:
+            parsed_existing_cs = validate_key_value_pairs(target_entry.get("connectionString")) or {}
+            existing_policy = parsed_existing_cs.get("SharedAccessKeyName") or IOT_HUB_DEFAULT_POLICY
             policies = iot_hub_policy_get(
-                hub_client, hub_name, IOT_HUB_DEFAULT_POLICY, _get_resource_group_from_hub(hub)
+                hub_client, hub_name, existing_policy, _get_resource_group_from_hub(hub)
             )
             target_entry["connectionString"] = IOT_SERVICE_CS_TEMPLATE.format(
                 target_entry["hostName"], policies["keyName"], policies["primaryKey"]
