@@ -536,7 +536,6 @@ def iot_dps_linked_hub_update(
     dps_name,
     linked_hub=None,
     hub_name=None,
-    hub_resource_group=None,
     hostname_type=None,
     authentication_type=None,
     user_assigned_identity=None,
@@ -600,7 +599,7 @@ def iot_dps_linked_hub_update(
     )
     if needs_hub_fetch:
         hub_client = iot_hub_service_factory(cmd.cli_ctx)
-        hub = iot_hub_get(cmd, hub_client, hub_name=hub_name, resource_group_name=hub_resource_group)
+        hub = iot_hub_get(cmd, hub_client, hub_name=hub_name)
 
     new_hostname = None
     if hostname_type:

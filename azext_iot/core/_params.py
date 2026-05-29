@@ -162,17 +162,13 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
     with self.argument_context('iot dps linked-hub update') as c:
         c.argument('linked_hub',
                    options_list=['--linked-hub'],
-                   help='Full host name of the linked IoT Hub (e.g. <hub>.device.azure-devices.net). '
+                   help='Full host name of the linked IoT Hub (e.g. `myhub.device.azure-devices.net`). '
                    'Use this to disambiguate when --hub-name resolves to multiple entries.',
                    arg_group='Linked Hub Identifier')
         c.argument('hub_name',
                    options_list=['--hub-name', '--hn'],
                    help='IoT Hub short name. Preferred over --linked-hub; resolves to the correct '
                    'entry regardless of classic/device hostname.',
-                   arg_group='Linked Hub Identifier')
-        c.argument('hub_resource_group',
-                   options_list=['--hub-resource-group', '--hrg'],
-                   help='Resource group of the IoT Hub. Used when looking up hub metadata.',
                    arg_group='Linked Hub Identifier')
         c.argument('hostname_type',
                    options_list=['--hostname-type', '--ht'],
