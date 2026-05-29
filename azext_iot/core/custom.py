@@ -557,6 +557,19 @@ def iot_dps_linked_hub_update(
             "Specify either --hub-name or --linked-hub, not both."
         )
 
+    mutation_args = {
+        "--hostname-type": hostname_type,
+        "--authentication-type": authentication_type,
+        "--connection-string": connection_string,
+        "--user-assigned-identity": user_assigned_identity,
+        "--allocation-weight": allocation_weight,
+        "--apply-allocation-policy": apply_allocation_policy,
+    }
+    if all(v is None for v in mutation_args.values()):
+        raise RequiredArgumentMissingError(
+            "Provide at least one update parameter: " + ", ".join(mutation_args.keys()) + "."
+        )
+
     if linked_hub and '.' not in linked_hub:
         hub_name = linked_hub
         linked_hub = None
@@ -588,7 +601,7 @@ def iot_dps_linked_hub_update(
     target_entry = _find_linked_hub_entry(linked_hubs, hub_name=hub_name, linked_hub=linked_hub)
 
     if is_mi:
-        identity_type = dps["identity"]["type"]
+        identity_type = (dps.get("identity") or {}).get("type", "None")
         if authentication_type == IotHubAuthenticationType.SYSTEM_ASSIGNED.value and "SystemAssigned" not in identity_type:
             raise InvalidArgumentValueError(
                 f"System-assigned managed identity is not enabled on DPS '{dps_name}'. "

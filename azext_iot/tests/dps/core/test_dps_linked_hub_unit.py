@@ -372,6 +372,15 @@ class TestLinkedHubUpdate:
         )
         assert existing_entries[0]["allocationWeight"] == 5
 
+    def test_no_mutation_params_errors(self, fixture_cmd, mock_deps):
+        """Identifier alone (no mutation flags) must error rather than issuing a no-op PUT
+        that could clobber concurrent changes."""
+        from azext_iot.core.custom import iot_dps_linked_hub_update
+        with pytest.raises(RequiredArgumentMissingError, match="at least one update parameter"):
+            iot_dps_linked_hub_update(
+                cmd=fixture_cmd, client=mock_deps, dps_name="dps", hub_name="myhub",
+            )
+
     def test_keybased_with_linked_hub_auto_fetches(self, fixture_cmd, mock_deps, existing_entries):
         """--linked-hub + --auth-type KeyBased (no CS) derives the hub short name to auto-fetch the key."""
         from azext_iot.core.custom import iot_dps_linked_hub_update

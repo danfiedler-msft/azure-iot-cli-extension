@@ -157,7 +157,7 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('apply_allocation_policy',
                    help='A boolean indicating whether to apply allocation policy to the IoT hub.',
                    arg_type=get_three_state_flag())
-        c.argument('allocation_weight', help='Allocation weight of the IoT hub.')
+        c.argument('allocation_weight', help='Allocation weight of the IoT hub.', type=int)
 
     with self.argument_context('iot dps linked-hub update') as c:
         c.argument('linked_hub',
@@ -196,7 +196,7 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('apply_allocation_policy',
                    help='A boolean indicating whether to apply allocation policy to the IoT hub.',
                    arg_type=get_three_state_flag())
-        c.argument('allocation_weight', help='Allocation weight of the IoT hub.')
+        c.argument('allocation_weight', help='Allocation weight of the IoT hub.', type=int)
 
     with self.argument_context('iot dps certificate') as c:
         c.argument('certificate_path', options_list=['--path', '-p'], type=file_type,
