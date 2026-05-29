@@ -301,6 +301,27 @@ class TestLinkedHubUpdate:
                 hub_name="myhub", authentication_type="UserAssigned",
             )
 
+    def test_uami_alone_errors(self, fixture_cmd, mock_deps):
+        """--user-assigned-identity without --authentication-type UserAssigned must error,
+        not silently ignore the UAMI."""
+        from azext_iot.core.custom import iot_dps_linked_hub_update
+        with pytest.raises(MutuallyExclusiveArgumentError, match="--user-assigned-identity only applies"):
+            iot_dps_linked_hub_update(
+                cmd=fixture_cmd, client=mock_deps, dps_name="dps",
+                hub_name="myhub",
+                user_assigned_identity="/subscriptions/x/.../myuami",
+            )
+
+    def test_uami_with_keybased_errors(self, fixture_cmd, mock_deps):
+        """--user-assigned-identity + --authentication-type KeyBased is contradictory; must error."""
+        from azext_iot.core.custom import iot_dps_linked_hub_update
+        with pytest.raises(MutuallyExclusiveArgumentError, match="--user-assigned-identity only applies"):
+            iot_dps_linked_hub_update(
+                cmd=fixture_cmd, client=mock_deps, dps_name="dps",
+                hub_name="myhub", authentication_type="KeyBased",
+                user_assigned_identity="/subscriptions/x/.../myuami",
+            )
+
     def test_mi_rejects_connection_string(self, fixture_cmd, mock_deps):
         from azext_iot.core.custom import iot_dps_linked_hub_update
         with pytest.raises(MutuallyExclusiveArgumentError, match="--connection-string cannot be used"):
@@ -309,6 +330,47 @@ class TestLinkedHubUpdate:
                 hub_name="myhub", authentication_type="SystemAssigned",
                 connection_string="HostName=x;SharedAccessKeyName=y;SharedAccessKey=z",
             )
+
+    def test_cs_on_existing_mi_link_errors(self, fixture_cmd, mock_deps, mocker):
+        """Providing --connection-string on an existing MI link without changing auth must error,
+        not silently no-op (Copilot review finding)."""
+        from azext_iot.core.custom import iot_dps_linked_hub_update
+        mi_entries = [{
+            "name": "myhub.device.azure-devices.net",
+            "hostName": "myhub.device.azure-devices.net",
+            "authenticationType": "SystemAssigned",
+            "connectionString": "",
+        }]
+        mocker.patch("azext_iot.core.custom.iot_dps_get", return_value={
+            "identity": {"type": "SystemAssigned"},
+            "properties": {"iotHubs": mi_entries},
+        })
+        with pytest.raises(MutuallyExclusiveArgumentError, match="only applies to KeyBased"):
+            iot_dps_linked_hub_update(
+                cmd=fixture_cmd, client=mock_deps, dps_name="dps",
+                hub_name="myhub",
+                connection_string="HostName=myhub.device.azure-devices.net;SharedAccessKeyName=k;SharedAccessKey=v",
+            )
+
+    def test_cs_on_keybased_link_rotates_key(self, fixture_cmd, mock_deps, existing_entries):
+        """Providing --connection-string on an existing KeyBased link (without other changes)
+        must actually apply the CS — used for key rotation."""
+        from azext_iot.core.custom import iot_dps_linked_hub_update
+        new_cs = "HostName=myhub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=rotated-key"
+        iot_dps_linked_hub_update(
+            cmd=fixture_cmd, client=mock_deps, dps_name="dps",
+            hub_name="myhub", connection_string=new_cs,
+        )
+        assert existing_entries[0]["connectionString"] == new_cs
+
+    def test_dotless_linked_hub_treated_as_hub_name(self, fixture_cmd, mock_deps, existing_entries):
+        """Backward compat: --linked-hub myhub (dotless) routes to the hub-name fuzzy match path."""
+        from azext_iot.core.custom import iot_dps_linked_hub_update
+        iot_dps_linked_hub_update(
+            cmd=fixture_cmd, client=mock_deps, dps_name="dps",
+            linked_hub="myhub", allocation_weight=5,
+        )
+        assert existing_entries[0]["allocationWeight"] == 5
 
     def test_keybased_with_linked_hub_auto_fetches(self, fixture_cmd, mock_deps, existing_entries):
         """--linked-hub + --auth-type KeyBased (no CS) derives the hub short name to auto-fetch the key."""

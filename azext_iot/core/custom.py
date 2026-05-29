@@ -557,6 +557,10 @@ def iot_dps_linked_hub_update(
             "Specify either --hub-name or --linked-hub, not both."
         )
 
+    if linked_hub and '.' not in linked_hub:
+        hub_name = linked_hub
+        linked_hub = None
+
     if not hub_name:
         hub_name = linked_hub.split(".")[0]
 
@@ -572,6 +576,10 @@ def iot_dps_linked_hub_update(
     if authentication_type == IotHubAuthenticationType.USER_ASSIGNED.value and not user_assigned_identity:
         raise RequiredArgumentMissingError(
             "--user-assigned-identity is required when --authentication-type is UserAssigned."
+        )
+    if user_assigned_identity and authentication_type != IotHubAuthenticationType.USER_ASSIGNED.value:
+        raise MutuallyExclusiveArgumentError(
+            "--user-assigned-identity only applies with --authentication-type UserAssigned."
         )
 
     resource_group_name = _ensure_dps_resource_group_name(client, resource_group_name, dps_name)
@@ -617,9 +625,16 @@ def iot_dps_linked_hub_update(
             target_entry["connectionString"] = ""
 
     target_auth = target_entry["authenticationType"]
+    if connection_string and target_auth != IotHubAuthenticationType.KEY_BASED.value:
+        raise MutuallyExclusiveArgumentError(
+            "--connection-string only applies to KeyBased authentication. "
+            "The linked hub uses managed identity; provide --authentication-type KeyBased "
+            "to switch, or omit --connection-string."
+        )
+
     cs_needs_rebuild = (
         target_auth == IotHubAuthenticationType.KEY_BASED.value
-        and (authentication_type or new_hostname)
+        and (authentication_type or new_hostname or connection_string)
     )
     if cs_needs_rebuild:
         if connection_string:
