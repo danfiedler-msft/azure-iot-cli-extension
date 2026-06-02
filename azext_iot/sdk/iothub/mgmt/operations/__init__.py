@@ -17,8 +17,8 @@ from ._operations import IotHubResourceOperations  # type: ignore
 from ._operations import ResourceProviderCommonOperations  # type: ignore
 from ._operations import CertificatesOperations  # type: ignore
 from ._operations import IotHubOperations  # type: ignore
-from ._operations import PrivateLinkResourcesOperations  # type: ignore
 from ._operations import PrivateEndpointConnectionsOperations  # type: ignore
+from ._operations import PrivateLinkResourcesOperations  # type: ignore
 
 from ._patch import __all__ as _patch_all
 from ._patch import *
@@ -30,8 +30,8 @@ __all__ = [
     "ResourceProviderCommonOperations",
     "CertificatesOperations",
     "IotHubOperations",
-    "PrivateLinkResourcesOperations",
     "PrivateEndpointConnectionsOperations",
+    "PrivateLinkResourcesOperations",
 ]
 __all__.extend([p for p in _patch_all if p not in __all__])  # pyright: ignore
 _patch_sdk()
