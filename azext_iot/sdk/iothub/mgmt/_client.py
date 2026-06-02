@@ -35,27 +35,26 @@ class IotHubClient:  # pylint: disable=too-many-instance-attributes
     """Use this API to manage the IoT hubs in your Azure subscription.
 
     :ivar operations: Operations operations
-    :vartype operations: iothub.mgmt.operations.Operations
+    :vartype operations: mgmt.operations.Operations
     :ivar iot_hub_resource: IotHubResourceOperations operations
-    :vartype iot_hub_resource: iothub.mgmt.operations.IotHubResourceOperations
+    :vartype iot_hub_resource: mgmt.operations.IotHubResourceOperations
     :ivar resource_provider_common: ResourceProviderCommonOperations operations
-    :vartype resource_provider_common: iothub.mgmt.operations.ResourceProviderCommonOperations
+    :vartype resource_provider_common: mgmt.operations.ResourceProviderCommonOperations
     :ivar certificates: CertificatesOperations operations
-    :vartype certificates: iothub.mgmt.operations.CertificatesOperations
+    :vartype certificates: mgmt.operations.CertificatesOperations
     :ivar iot_hub: IotHubOperations operations
-    :vartype iot_hub: iothub.mgmt.operations.IotHubOperations
-    :ivar private_link_resources: PrivateLinkResourcesOperations operations
-    :vartype private_link_resources: iothub.mgmt.operations.PrivateLinkResourcesOperations
+    :vartype iot_hub: mgmt.operations.IotHubOperations
     :ivar private_endpoint_connections: PrivateEndpointConnectionsOperations operations
-    :vartype private_endpoint_connections:
-     iothub.mgmt.operations.PrivateEndpointConnectionsOperations
+    :vartype private_endpoint_connections: mgmt.operations.PrivateEndpointConnectionsOperations
+    :ivar private_link_resources: PrivateLinkResourcesOperations operations
+    :vartype private_link_resources: mgmt.operations.PrivateLinkResourcesOperations
     :param credential: Credential needed for the client to connect to Azure. Required.
     :type credential: ~azure.core.credentials.TokenCredential
-    :param subscription_id: The subscription identifier. Required.
+    :param subscription_id: The ID of the target subscription. The value must be an UUID. Required.
     :type subscription_id: str
     :param endpoint: Service URL. Default value is "https://management.azure.com".
     :type endpoint: str
-    :keyword api_version: Api Version. Default value is "2026-03-01-preview". Note that overriding
+    :keyword api_version: Api Version. Default value is "2026-05-01-preview". Note that overriding
      this default value may result in unsupported behavior.
     :paramtype api_version: str
     :keyword int polling_interval: Default waiting time between two polls for LRO operations if no
@@ -100,10 +99,10 @@ class IotHubClient:  # pylint: disable=too-many-instance-attributes
         )
         self.certificates = CertificatesOperations(self._client, self._config, self._serialize, self._deserialize)
         self.iot_hub = IotHubOperations(self._client, self._config, self._serialize, self._deserialize)
-        self.private_link_resources = PrivateLinkResourcesOperations(
+        self.private_endpoint_connections = PrivateEndpointConnectionsOperations(
             self._client, self._config, self._serialize, self._deserialize
         )
-        self.private_endpoint_connections = PrivateEndpointConnectionsOperations(
+        self.private_link_resources = PrivateLinkResourcesOperations(
             self._client, self._config, self._serialize, self._deserialize
         )
 
