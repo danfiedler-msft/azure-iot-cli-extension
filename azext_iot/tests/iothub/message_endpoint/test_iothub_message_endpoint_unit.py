@@ -1123,7 +1123,7 @@ class TestFabricEventStreamCreate:
         assert result == generic_response
 
     def test_create_fabric_eventstream_missing_workspace_id_errors(self, fixture_cmd, fixture_update_endpoint_ops):
-        with pytest.raises(TypeError):
+        with pytest.raises(RequiredArgumentMissingError):
             subject.message_endpoint_create_fabric_eventstream(
                 cmd=fixture_cmd,
                 hub_name=hub_name,
@@ -1131,12 +1131,13 @@ class TestFabricEventStreamCreate:
                 endpoint_uri="sb://test-ns.servicebus.windows.net",
                 entity_path="es-entity",
                 identity="[system]",
+                workspace_id=None,
                 eventstream_id="es-id-1",
                 source_id="src-id-1",
             )
 
     def test_create_fabric_eventstream_missing_eventstream_id_errors(self, fixture_cmd, fixture_update_endpoint_ops):
-        with pytest.raises(TypeError):
+        with pytest.raises(RequiredArgumentMissingError):
             subject.message_endpoint_create_fabric_eventstream(
                 cmd=fixture_cmd,
                 hub_name=hub_name,
@@ -1145,11 +1146,12 @@ class TestFabricEventStreamCreate:
                 entity_path="es-entity",
                 identity="[system]",
                 workspace_id="ws-id-1",
+                eventstream_id=None,
                 source_id="src-id-1",
             )
 
     def test_create_fabric_eventstream_missing_source_id_errors(self, fixture_cmd, fixture_update_endpoint_ops):
-        with pytest.raises(TypeError):
+        with pytest.raises(RequiredArgumentMissingError):
             subject.message_endpoint_create_fabric_eventstream(
                 cmd=fixture_cmd,
                 hub_name=hub_name,
@@ -1159,6 +1161,7 @@ class TestFabricEventStreamCreate:
                 identity="[system]",
                 workspace_id="ws-id-1",
                 eventstream_id="es-id-1",
+                source_id=None,
             )
 
     def test_create_fabric_eventstream_missing_identity_errors(self, fixture_cmd, fixture_update_endpoint_ops):
