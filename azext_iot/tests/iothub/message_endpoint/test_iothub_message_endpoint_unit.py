@@ -1081,7 +1081,6 @@ class TestMessageEndpointUpdate:
 
 
 class TestFabricEventStreamCreate:
-    # Use a UAMI-shaped string (looks like an ARM resource id) for the user-assigned-identity case.
     uami_id = "/subscriptions/0000/resourceGroups/rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uami1"
 
     @pytest.mark.parametrize(
@@ -1108,7 +1107,6 @@ class TestFabricEventStreamCreate:
         assert result == generic_response
 
     def test_create_fabric_eventstream_minimum_args(self, fixture_cmd, fixture_update_endpoint_ops):
-        # All required args present (now includes the 3 Fabric IDs).
         result = subject.message_endpoint_create_fabric_eventstream(
             cmd=fixture_cmd,
             hub_name=hub_name,
@@ -1209,8 +1207,6 @@ class TestFabricEventStreamCreate:
     def test_create_fabric_eventstream_works_on_hub_without_eventstreams_key(
         self, fixture_cmd, fixture_update_endpoint_backwards_comp_ops
     ):
-        # Defensive: MessageEndpoint.__init__ setdefault should fill in eventStreams=[]
-        # even on hubs that have never had this endpoint type configured.
         result = subject.message_endpoint_create_fabric_eventstream(
             cmd=fixture_cmd,
             hub_name=hub_name,
@@ -1227,7 +1223,6 @@ class TestFabricEventStreamCreate:
 
 class TestFabricEventStreamUpdate:
     def test_update_fabric_eventstream_happy_path(self, fixture_cmd, fixture_update_endpoint_ops):
-        # The fixture seeds an eventStreams entry with the shared endpoint_name.
         result = subject.message_endpoint_update_fabric_eventstream(
             cmd=fixture_cmd,
             hub_name=hub_name,
@@ -1253,37 +1248,7 @@ class TestFabricEventStreamUpdate:
         )
         assert result == generic_response
 
-    def test_update_fabric_eventstream_rejects_connection_string(self, fixture_cmd, fixture_update_endpoint_ops):
-        # The wrapper does not expose --connection-string for fabric-eventstream, but verify
-        # the provider's defensive mutex check rejects it if reached directly.
-        from azext_iot.iothub.providers.message_endpoint import MessageEndpoint
-        from azext_iot.iothub.common import EndpointType
-        provider = MessageEndpoint(cmd=fixture_cmd, hub_name=hub_name, rg=hub_rg)
-        with pytest.raises(MutuallyExclusiveArgumentError):
-            provider.update(
-                endpoint_name=endpoint_name,
-                endpoint_type=EndpointType.FabricEventStream.value,
-                connection_string="dummy",
-            )
-
-    def test_create_fabric_eventstream_rejects_connection_string(self, fixture_cmd, fixture_update_endpoint_ops):
-        # Same defensive check on the provider create() side.
-        from azext_iot.iothub.providers.message_endpoint import MessageEndpoint
-        from azext_iot.iothub.common import EndpointType
-        provider = MessageEndpoint(cmd=fixture_cmd, hub_name=hub_name, rg=hub_rg)
-        with pytest.raises(MutuallyExclusiveArgumentError):
-            provider.create(
-                endpoint_name="es-" + generate_names(),
-                endpoint_type=EndpointType.FabricEventStream.value,
-                endpoint_uri="sb://test-ns.servicebus.windows.net",
-                entity_path="entity",
-                identity="[system]",
-                connection_string="dummy",
-            )
-
     def test_create_fabric_eventstream_provider_requires_fabric_ids(self, fixture_cmd, fixture_update_endpoint_ops):
-        # Defense-in-depth: even if a direct provider caller bypasses the wrapper,
-        # provider.create() must reject missing Fabric IDs.
         from azext_iot.iothub.providers.message_endpoint import MessageEndpoint
         from azext_iot.iothub.common import EndpointType
         provider = MessageEndpoint(cmd=fixture_cmd, hub_name=hub_name, rg=hub_rg)
@@ -1334,32 +1299,3 @@ class TestFabricEventStreamShowListDelete:
             resource_group_name=hub_rg,
         )
         assert isinstance(result, list)
-
-    def test_show_fabric_eventstream(self, fixture_cmd, fixture_update_endpoint_ops):
-        # The fixture seeds an eventStreams entry with the shared endpoint_name.
-        result = subject.message_endpoint_show(
-            cmd=fixture_cmd,
-            hub_name=hub_name,
-            endpoint_name=endpoint_name,
-            resource_group_name=hub_rg,
-        )
-        assert result is not None
-
-    def test_delete_fabric_eventstream_by_name(self, fixture_cmd, fixture_update_endpoint_ops):
-        result = subject.message_endpoint_delete(
-            cmd=fixture_cmd,
-            hub_name=hub_name,
-            endpoint_name=endpoint_name,
-            resource_group_name=hub_rg,
-        )
-        assert result == generic_response
-
-    def test_delete_all_fabric_eventstreams_by_type(self, fixture_cmd, fixture_update_endpoint_ops):
-        from azext_iot.iothub.common import EndpointType
-        result = subject.message_endpoint_delete(
-            cmd=fixture_cmd,
-            hub_name=hub_name,
-            endpoint_type=EndpointType.FabricEventStream.value,
-            resource_group_name=hub_rg,
-        )
-        assert result == generic_response

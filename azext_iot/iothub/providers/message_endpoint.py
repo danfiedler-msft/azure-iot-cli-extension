@@ -229,12 +229,7 @@ class MessageEndpoint(IoTHubProvider):
                 "maxChunkSizeInBytes": (chunk_size_window * BYTES_PER_MEGABYTE),
             })
             endpoints["storageContainers"].append(new_endpoint)
-        elif endpoint_type.lower() == EndpointType.FabricEventStream.value:
-            if connection_string:
-                raise MutuallyExclusiveArgumentError(
-                    "--connection-string is not supported for fabric-eventstream endpoints. "
-                    "Use --identity [system] or --identity <UAMI-resource-id>. "
-                )
+        elif endpoint_type == EndpointType.FabricEventStream.value:
             if not identity:
                 raise RequiredArgumentMissingError(
                     "--identity is required for fabric-eventstream endpoints. "
@@ -249,8 +244,7 @@ class MessageEndpoint(IoTHubProvider):
             if not workspace_id or not eventstream_id or not source_id:
                 raise RequiredArgumentMissingError(
                     "--workspace-id, --eventstream-id, and --source-id are all required for "
-                    "fabric-eventstream endpoints. Obtain these GUIDs from the Fabric Custom Endpoint "
-                    "source details so the Azure Portal and Fabric Portal can deep-link to the items."
+                    "fabric-eventstream endpoints. Obtain these from the Fabric Custom Endpoint."
                 )
             es_endpoint = {
                 "name": endpoint_name,
@@ -299,12 +293,6 @@ class MessageEndpoint(IoTHubProvider):
         # if nothing is provided -> should we block?
         # have the user say the type. Will make args easier (as in we do not need to check for unneeded args)
         original_endpoint = self._show_by_type(endpoint_name=endpoint_name, endpoint_type=endpoint_type)
-
-        if endpoint_type.lower() == EndpointType.FabricEventStream.value and connection_string:
-            raise MutuallyExclusiveArgumentError(
-                "--connection-string is not supported for fabric-eventstream endpoints. "
-                "Use --identity [system] or --identity <UAMI-resource-id>."
-            )
 
         if any([connection_string, primary_key, secondary_key]) and identity:
             cosmos_db = endpoint_type.lower() == EndpointType.CosmosDBContainer.value
@@ -393,12 +381,12 @@ class MessageEndpoint(IoTHubProvider):
         elif endpoint_type == EndpointType.FabricEventStream.value:
             if entity_path:
                 original_endpoint["entityPath"] = entity_path
-            if workspace_id is not None:
-                original_endpoint["workspaceId"] = workspace_id or None
-            if eventstream_id is not None:
-                original_endpoint["eventStreamId"] = eventstream_id or None
-            if source_id is not None:
-                original_endpoint["sourceId"] = source_id or None
+            if workspace_id:
+                original_endpoint["workspaceId"] = workspace_id
+            if eventstream_id:
+                original_endpoint["eventStreamId"] = eventstream_id
+            if source_id:
+                original_endpoint["sourceId"] = source_id
 
         return self.discovery.client.begin_create_or_update(
             self.hub_resource["resourcegroup"],
