@@ -58,8 +58,7 @@ def _get_credential_scopes(cli_ctx):
 
 def _get_arm_endpoint(cli_ctx):
     """TODO: Revert to cli_ctx.cloud.endpoints.resource_manager once 2026-05-01-preview
-    is registered globally in ARM for all regions (ETA mid June 2026 per IoT Hub team).
-    PBI: https://msazure.visualstudio.com/One/_workitems/edit/38228149"""
+    is registered globally in ARM for all regions (ETA mid June 2026 per IoT Hub team)."""
     return "https://centraluseuap.management.azure.com"
 
 
