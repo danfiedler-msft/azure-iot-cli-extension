@@ -63,7 +63,6 @@ DPS_GC_THRESHOLD_SECONDS = 24 * 60 * 60
 _LOCAL_RUN_UID = uuid.uuid4().hex
 
 
-
 def generate_hub_id() -> str:
     return f"aziotclitest-hub-{generate_generic_id()}"[:35]
 
