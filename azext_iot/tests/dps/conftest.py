@@ -129,14 +129,14 @@ def _state_paths(run_uid: str, kind: str):
 
 def _read_state(state_path: str) -> Optional[Dict]:
     try:
-        with open(state_path) as state_file:
+        with open(state_path, encoding="utf-8") as state_file:
             return json.load(state_file)
     except (OSError, ValueError):
         return None
 
 
 def _write_state(state_path: str, state: Dict) -> None:
-    with open(state_path, "w") as state_file:
+    with open(state_path, "w", encoding="utf-8") as state_file:
         json.dump(state, state_file)
 
 
@@ -190,7 +190,7 @@ def _gc_stale_resources_once(run_uid: str) -> None:
             _gc_stale(run_uid, INT_TEST_DPS_PREFIX, _list_dps, _delete_dps)
             _gc_stale(run_uid, INT_TEST_HUB_PREFIX, _list_hubs, _delete_hub)
         finally:
-            with open(gc_marker, "w"):
+            with open(gc_marker, "w", encoding="utf-8"):
                 pass
 
 
