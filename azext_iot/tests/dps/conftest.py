@@ -231,11 +231,26 @@ def _delete_dps(dps_name: str) -> None:
     cli.invoke(f"iot dps delete --name {dps_name} --resource-group {ENTITY_RG}")
 
 
+def _hub_link_host_name(iot_hub: Dict) -> str:
+    """Return the hub hostname the way DPS actually links it.
+
+    DPS links the hub from its connection string and records the linked hub by the
+    connection string's ``HostName``. On GWv2/TLS 1.3 hubs that is the device-facing
+    hostname (``<name>.device.azure-devices.net``) rather than the classic
+    ``<name>.azure-devices.net``. Enrollment ``--iot-hubs`` and the registration
+    ``assignedHub`` must use this same value, so derive it from the connection string.
+    """
+    for segment in iot_hub["connectionString"].split(";"):
+        if segment.lower().startswith("hostname="):
+            return segment.split("=", 1)[1]
+    return "{}.azure-devices.net".format(iot_hub["name"])
+
+
 def _link_hub(dps_name: str, iot_hub: Dict) -> str:
     linked_hubs = cli.invoke(
         "iot dps linked-hub list --dps-name {} -g {}".format(dps_name, ENTITY_RG)
     ).as_json()
-    hub_host_name = "{}.azure-devices.net".format(iot_hub["name"])
+    hub_host_name = _hub_link_host_name(iot_hub)
     if hub_host_name not in [hub["name"] for hub in linked_hubs]:
         cli.invoke(
             f"iot dps linked-hub create --dps-name {dps_name} -g {ENTITY_RG} "
@@ -296,7 +311,7 @@ def _iot_dps_provisioner(request, iot_hub: Optional[Dict] = None) -> dict:
             find_fn=_find_dps_by_name,
         )
         dps_name = target_dps["name"]
-        hub_host_name = "{}.azure-devices.net".format(iot_hub["name"]) if iot_hub else None
+        hub_host_name = _hub_link_host_name(iot_hub) if iot_hub else None
     else:
         dps_name = settings.env.azext_iot_testdps
         target_dps = _find_dps_by_name(dps_name)
