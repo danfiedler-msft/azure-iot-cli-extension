@@ -1188,7 +1188,6 @@ def test_iot_fabric_eventstream_endpoint_lifecycle(provisioned_event_hub_with_id
 
     iot_hub = iot_hub_obj["name"]
     iot_rg = iot_hub_obj["resourcegroup"]
-    iot_sub = iot_hub_obj["subscriptionid"]
     user_id = list(iot_hub_obj["identity"]["userAssignedIdentities"].keys())[0]
     eventhub_instance = event_hub_obj["eventhub"]["name"]
     endpoint_uri = "sb:" + event_hub_obj["namespace"]["serviceBusEndpoint"].split(":")[1]
@@ -1220,8 +1219,6 @@ def test_iot_fabric_eventstream_endpoint_lifecycle(provisioned_event_hub_with_id
 
     expected_sys_endpoint = build_expected_endpoint(
         endpoint_names[0],
-        iot_rg,
-        iot_sub,
         entity_path=eventhub_instance,
         authentication_type=AuthenticationType.IdentityBased.value,
         endpoint_uri=endpoint_uri,
@@ -1256,8 +1253,6 @@ def test_iot_fabric_eventstream_endpoint_lifecycle(provisioned_event_hub_with_id
 
     expected_user_endpoint = build_expected_endpoint(
         endpoint_names[1],
-        iot_rg,
-        iot_sub,
         entity_path=eventhub_instance,
         authentication_type=AuthenticationType.IdentityBased.value,
         endpoint_uri=endpoint_uri,
@@ -1300,8 +1295,6 @@ def test_iot_fabric_eventstream_endpoint_lifecycle(provisioned_event_hub_with_id
 
     expected_user_endpoint = build_expected_endpoint(
         endpoint_names[0],
-        iot_rg,
-        iot_sub,
         entity_path=eventhub_instance,
         authentication_type=AuthenticationType.IdentityBased.value,
         endpoint_uri=endpoint_uri,
@@ -1328,8 +1321,6 @@ def test_iot_fabric_eventstream_endpoint_lifecycle(provisioned_event_hub_with_id
 
     expected_sys_endpoint = build_expected_endpoint(
         endpoint_names[0],
-        iot_rg,
-        iot_sub,
         entity_path=eventhub_instance,
         authentication_type=AuthenticationType.IdentityBased.value,
         endpoint_uri=endpoint_uri,
@@ -1365,8 +1356,6 @@ def test_iot_fabric_eventstream_endpoint_lifecycle(provisioned_event_hub_with_id
 
     expected_retarget_endpoint = build_expected_endpoint(
         endpoint_names[1],
-        iot_rg,
-        iot_sub,
         entity_path=eventhub_instance,
         authentication_type=AuthenticationType.IdentityBased.value,
         endpoint_uri=endpoint_uri,
@@ -1659,8 +1648,8 @@ def test_iot_endpoint_force_delete(provisioned_service_bus_with_identity_module)
 
 def build_expected_endpoint(
     name: str,
-    resource_group: str,
-    subscription_id: str,
+    resource_group: Optional[str] = None,
+    subscription_id: Optional[str] = None,
     authentication_type: str = AuthenticationType.KeyBased.value,
     endpoint_uri: Optional[str] = None,
     identity: Optional[str] = None,
@@ -1682,10 +1671,13 @@ def build_expected_endpoint(
 ):
     expected = {
         "name": name,
-        "resourceGroup": resource_group,
-        "subscriptionId": subscription_id,
         "authenticationType": authentication_type
     }
+    # fabric-eventstream endpoints don't carry resourceGroup/subscriptionId; all other types do
+    if resource_group:
+        expected["resourceGroup"] = resource_group
+    if subscription_id:
+        expected["subscriptionId"] = subscription_id
 
     if endpoint_uri:
         expected["endpointUri"] = endpoint_uri
@@ -1730,10 +1722,12 @@ def assert_endpoint_properties(result: dict, expected: dict):
     # Props that will always be populated
     assert result["name"] == expected["name"]
     # resourceGroup and subscriptionId are not populated for fabric-eventstream endpoints
-    if "resourceGroup" in result:
+    if "resourceGroup" in expected:
         assert result["resourceGroup"] == expected["resourceGroup"]
-    if "subscriptionId" in result:
         assert result["subscriptionId"] == expected["subscriptionId"]
+    else:
+        assert "resourceGroup" not in result
+        assert "subscriptionId" not in result
     # assert result["id"] # TODO @vilit should cosmos db endpoint return this as None
     assert result["authenticationType"] == expected["authenticationType"]
 
