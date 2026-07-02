@@ -57,7 +57,7 @@ def _get_credential_scopes(cli_ctx):
 
 
 def _get_arm_endpoint(cli_ctx):
-    return "https://centraluseuap.management.azure.com"  # TEMP-CANARY - Tracked by a PBI for removal
+    return cli_ctx.cloud.endpoints.resource_manager
 
 
 def iot_hub_service_factory(cli_ctx, *_):
