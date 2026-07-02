@@ -82,8 +82,7 @@ def load_core_arguments(self, _):
             arg_type=get_three_state_flag(),
             options_list=["--disable-local-auth", "--dla"],
             help="A boolean indicating whether or not to disable SAS key (shared access "
-            "policy) authentication for this provisioning service, requiring Azure RBAC "
-            "for all control and data-plane operations.",
+            "policy) authentication for this provisioning service.",
         )
 
     # DPS identity assignment params
