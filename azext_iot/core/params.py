@@ -77,6 +77,14 @@ def load_core_arguments(self, _):
             help="Enable user-assigned managed identities for this provisioning service. "
             "Accepts space-separated list of identity resource IDs.",
         )
+        c.argument(
+            "disable_local_auth",
+            arg_type=get_three_state_flag(),
+            options_list=["--disable-local-auth", "--dla"],
+            help="A boolean indicating whether or not to disable SAS key (shared access "
+            "policy) authentication for this provisioning service, requiring Azure RBAC "
+            "for all control and data-plane operations.",
+        )
 
     # DPS identity assignment params
     with self.argument_context("iot dps identity assign") as c:
