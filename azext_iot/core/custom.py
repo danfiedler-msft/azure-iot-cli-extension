@@ -189,6 +189,7 @@ def iot_dps_create(
     adr_ns_identity_id=None,
     mi_system_assigned=None,
     mi_user_assigned=None,
+    disable_local_auth=None,
 ):
     """
     Create a DPS instance with support for Device Registry namespace.
@@ -198,6 +199,9 @@ def iot_dps_create(
     _check_dps_name_availability(client.iot_dps_resource, dps_name)
     location = _ensure_location(cli_ctx, resource_group_name, location)
     dps_property = {"enableDataResidency": enable_data_residency}
+
+    if disable_local_auth is not None:
+        dps_property["disableLocalAuth"] = disable_local_auth
 
     # TODO - CMS Preview - DPS ADR properties
     if adr_ns_id:
@@ -237,10 +241,14 @@ def iot_dps_update(
     adr_ns_identity_id=None,
     mi_system_assigned=None,
     mi_user_assigned=None,
+    disable_local_auth=None,
 ):
     resource_group_name = _ensure_dps_resource_group_name(client, resource_group_name, dps_name)
     if tags is not None:
         parameters["tags"] = tags
+
+    if disable_local_auth is not None:
+        parameters["properties"]["disableLocalAuth"] = disable_local_auth
 
     # Update ADR namespace configuration if provided
     if adr_ns_id or adr_ns_identity_id:
