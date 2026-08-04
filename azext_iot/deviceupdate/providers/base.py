@@ -13,6 +13,7 @@ import json
 import os
 from base64 import b64encode
 from pathlib import Path, PurePath
+from time import sleep
 from typing import Any, List, NamedTuple, Optional, Tuple, Union
 
 from azure.cli.core.azclierror import (CLIInternalError,
@@ -34,6 +35,12 @@ from azext_iot.sdk.deviceupdate.dataplane import DeviceUpdateClient
 from azext_iot.sdk.deviceupdate.dataplane import models as DeviceUpdateDataModels
 
 logger = get_logger(__name__)
+
+# Microsoft.DeviceUpdate intermittently returns a successful subscription-wide account
+# list that omits existing accounts. It is a 200 with no nextLink, so no SDK retry policy
+# catches it. Retry with exponential backoff (2s, 4s, 8s) before declaring not found.
+ACCOUNT_DISCOVERY_ATTEMPTS = 4
+ACCOUNT_DISCOVERY_RETRY_SEC = 2
 
 
 class AccountContainer(NamedTuple):
@@ -127,12 +134,16 @@ class DeviceUpdateAccountManager(DeviceUpdateClientHandler):
             except AzureError as e:
                 handle_service_exception(e)
 
-        try:
-            for account in self.mgmt_client.accounts.list_by_subscription():
-                if account.name == target_name:
-                    return AccountContainer(account, find_account_rg(account.id))
-        except AzureError as e:
-            handle_service_exception(e)
+        for attempt in range(ACCOUNT_DISCOVERY_ATTEMPTS):
+            try:
+                for account in self.mgmt_client.accounts.list_by_subscription():
+                    if account.name == target_name:
+                        return AccountContainer(account, find_account_rg(account.id))
+            except AzureError as e:
+                handle_service_exception(e)
+
+            if attempt + 1 < ACCOUNT_DISCOVERY_ATTEMPTS:
+                sleep(ACCOUNT_DISCOVERY_RETRY_SEC * (2 ** attempt))
 
         raise ResourceNotFoundError(
             f"DeviceUpdate account: '{target_name}' not found by auto-discovery. "

@@ -101,11 +101,14 @@ def test_find_account_by_subscription_match():
     assert container.account is account
 
 
-def test_find_account_by_subscription_no_match_raises():
+def test_find_account_by_subscription_no_match_raises(mocker):
     mgr = _account_manager()
+    sleep_mock = mocker.patch.object(subject, "sleep")
     mgr.mgmt_client.accounts.list_by_subscription.return_value = []
     with pytest.raises(ResourceNotFoundError):
         mgr.find_account(target_name="a")
+    assert mgr.mgmt_client.accounts.list_by_subscription.call_count == subject.ACCOUNT_DISCOVERY_ATTEMPTS
+    assert [c.args[0] for c in sleep_mock.call_args_list] == [2, 4, 8]
 
 
 def test_find_account_by_subscription_service_error(mocker):

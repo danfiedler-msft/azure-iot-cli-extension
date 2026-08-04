@@ -5,6 +5,7 @@
 # --------------------------------------------------------------------------------------------
 
 import pytest
+from time import sleep
 from azext_iot.common.embedded_cli import EmbeddedCLI
 from azext_iot.tests.deviceupdate.conftest import (
     ACCOUNT_RG,
@@ -15,6 +16,24 @@ from typing import Dict
 
 
 cli = EmbeddedCLI()
+
+# 'account list' does not go through find_account, so it has no product-side retry: the
+# CLI cannot know an account is missing without an expected set. The test does know what
+# it created, so it re-lists with exponential backoff (2s, 4s, 8s) before asserting.
+LIST_ATTEMPTS = 4
+LIST_RETRY_SEC = 2
+
+
+def _list_accounts(command: str, expected_names) -> list:
+    expected = set(expected_names)
+    accounts = []
+    for attempt in range(LIST_ATTEMPTS):
+        accounts = cli.invoke(command).as_json()
+        if expected.issubset({account["name"] for account in accounts}):
+            break
+        if attempt + 1 < LIST_ATTEMPTS:
+            sleep(LIST_RETRY_SEC * (2 ** attempt))
+    return accounts
 
 
 @pytest.mark.adu_infrastructure(location="eastus2euap", count=2, delete=False)
@@ -83,7 +102,7 @@ def test_account_create_custom():
 def test_account_list(provisioned_accounts: Dict[str, dict]):
     provisioned_accounts_len = len(provisioned_accounts["accounts"])
 
-    sub_accounts: list = cli.invoke("iot du account list").as_json()
+    sub_accounts: list = _list_accounts("iot du account list", provisioned_accounts["accounts"])
     sub_accounts_len = len(sub_accounts)
     assert sub_accounts_len >= provisioned_accounts_len
     sub_acct_map = {}
@@ -92,7 +111,9 @@ def test_account_list(provisioned_accounts: Dict[str, dict]):
     for acct_name in provisioned_accounts["accounts"]:
         assert acct_name in sub_acct_map
 
-    group_accounts: list = cli.invoke(f"iot du account list -g {ACCOUNT_RG}").as_json()
+    group_accounts: list = _list_accounts(
+        f"iot du account list -g {ACCOUNT_RG}", provisioned_accounts["accounts"]
+    )
     group_accounts_len = len(group_accounts)
     assert group_accounts_len >= provisioned_accounts_len
     group_acct_map = {}
