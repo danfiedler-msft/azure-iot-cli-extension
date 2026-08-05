@@ -34,7 +34,9 @@ from azext_iot.iothub.providers.helpers.edge_device_config import (
     process_edge_devices_config_file_content,
     create_edge_device_config,
     try_parse_valid_deployment_config,
+    validate_edge_device_id,
 )
+from azext_iot.iothub.providers.device_identity import _resolve_device_bundle_directory
 from azext_iot.iothub.common import (
     EdgeContainerAuth,
     EdgeDevicesConfig,
@@ -381,6 +383,12 @@ class TestHierarchyCreateFailures:
             (
                 None,
                 "device_configs/invalid/missing_device_id.yml",
+                InvalidArgumentValueError,
+            ),
+            # path traversal in device ID
+            (
+                None,
+                "device_configs/invalid/traversal_device_id.yml",
                 InvalidArgumentValueError,
             ),
             # devices AND config
@@ -1239,6 +1247,66 @@ class TestEdgeHierarchyConfigFunctions:
         )
 
         assert script_content == "\n".join(segments)
+
+
+class TestEdgeDeviceIdValidation:
+    @pytest.mark.parametrize(
+        "device_id",
+        [
+            "device_1",
+            "device-1.edge",
+            "dev+ice%1#2*3?4!5(6)7,8:9=0@$'",
+            # shell metacharacters that are legal IoT Hub device Id characters -
+            # neutralized by quoting in the install script, not by rejection
+            "device$(whoami)",
+            "d" * 128,
+        ],
+    )
+    def test_valid_device_ids(self, device_id):
+        assert validate_edge_device_id(device_id) == device_id
+
+    @pytest.mark.parametrize(
+        "device_id",
+        [
+            None,
+            "",
+            "..",
+            ".",
+            "../evil",
+            "..\\evil",
+            "sub/device",
+            "sub\\device",
+            "/absolute/device",
+            "C:/Windows/Temp",
+            'device"; rm -rf /; #',
+            "device`whoami`",
+            "device with spaces",
+            "d" * 129,
+        ],
+    )
+    def test_invalid_device_ids(self, device_id):
+        with pytest.raises(InvalidArgumentValueError):
+            validate_edge_device_id(device_id)
+
+    @pytest.mark.parametrize(
+        "device_id",
+        ["..", "../escape", "/absolute", "C:/Windows"],
+    )
+    def test_bundle_directory_traversal_blocked(self, device_id):
+        with pytest.raises(InvalidArgumentValueError):
+            _resolve_device_bundle_directory(PurePath(test_path).joinpath("bundle"), device_id)
+
+    def test_bundle_directory_contained(self):
+        bundle_root = PurePath(test_path).joinpath("bundle")
+        assert _resolve_device_bundle_directory(bundle_root, "device_1") == bundle_root.joinpath(
+            "device_1"
+        )
+
+    def test_device_id_is_shell_quoted_in_script(self):
+        # '$', '(' and ')' are legal IoT Hub device Id characters, so command substitution
+        # must be neutralized by quoting rather than relying on character validation alone
+        script_content = create_edge_device_config_script(device_id="device$(whoami)")
+        assert "device_id='device$(whoami)'" in script_content
 
 
 class TestDevicesDelete:
