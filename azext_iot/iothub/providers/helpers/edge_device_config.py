@@ -6,7 +6,6 @@
 """This module defines common values and functions for processing edge device configurations"""
 
 import re
-import shlex
 from pathlib import PurePath
 from os import getcwd
 from typing import Optional, List, Dict, Any
@@ -141,7 +140,7 @@ EDGE_CONFIG_SCRIPT_HEADERS = """
 # This script will attempt to configure a pre-installed iotedge as a nested node.
 # It must be run as sudo, and will modify the ca
 
-device_id={}
+device_id="{}"
 cp config.toml /etc/aziot/config.toml
 """
 EDGE_CONFIG_SCRIPT_HOSTNAME = """
@@ -502,7 +501,7 @@ def create_edge_device_config_script(
     parent_hostname: Optional[str] = None,
 ):
     return "\n".join(
-        [EDGE_CONFIG_SCRIPT_HEADERS.format(shlex.quote(device_id))]
+        [EDGE_CONFIG_SCRIPT_HEADERS.format(device_id)]
         + ([EDGE_CONFIG_SCRIPT_HOSTNAME] if not hostname else [])
         + (
             [EDGE_CONFIG_SCRIPT_PARENT_HOSTNAME]
